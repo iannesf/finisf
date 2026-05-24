@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças Ianne v6.4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .sugestao-item { border-bottom: 1px solid #f3f4f6; }
+        .sugestao-item:last-child { border-bottom: none; }
+        #menuLateral { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen pb-12 overflow-x-hidden">
+
+    <header class="bg-purple-800 text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center relative">
+            <button onclick="toggleMenu()" class="p-1 focus:outline-none rounded-lg active:bg-purple-700 transition">
+                <span class="material-icons text-2xl">menu</span>
+            </button>
+            <h1 id="tituloPagina" class="text-xl font-bold text-center flex-1 pr-6">Novo Lançamento</h1>
+            <span id="statusApp" class="text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse">SYNC</span>
+        </div>
+    </header>
+
+    <div id="menuLateral" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-gray-100 z-[60] transform -translate-x-full shadow-2xl flex flex-col">
+        <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-purple-900">
+            <div class="flex items-center space-x-2">
+                <span class="material-icons text-purple-300">insights</span>
+                <span class="font-bold text-lg">Menu Inteligente</span>
+            </div>
+            <button onclick="toggleMenu()" class="text-gray-400"><span class="material-icons">close</span></button>
+        </div>
+        <nav class="flex-1 p-4 space-y-1">
+            <button onclick="selecionarMenu('pagLancamento', 'Novo Lançamento')" id="m_pagLancamento" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-purple-800 text-white">
+                <span class="material-icons text-lg">add_circle</span><span>Lançamentos</span>
+            </button>
+            <!-- NOVA ADIÇÃO: Botão de Saldos no Menu -->
+            <button onclick="selecionarMenu('pagContas', 'Minhas Contas')" id="m_pagContas" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
+                <span class="material-icons text-lg">account_balance_wallet</span><span>Minhas Contas</span>
+            </button>
+            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="m_pagDashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
+                <span class="material-icons text-lg">auto_awesome</span><span>Insights do Mês</span>
+            </button>
+            <button onclick="selecionarMenu('pagExtrato', 'Histórico (50)')" id="m_pagExtrato" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
+                <span class="material-icons text-lg">history</span><span>Extrato / Excluir</span>
+            </button>
+            <button onclick="selecionarMenu('pagOrcamento', 'Metas do Mês')" id="m_pagOrcamento" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
+                <span class="material-icons text-lg">track_changes</span><span>Planejamento</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gray-800 text-[10px] text-gray-600 text-center font-mono">IANNE FINANCE v6.4</div>
+    </div>
+    <div id="menuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black opacity-0 pointer-events-none transition-opacity duration-300 z-55"></div>
+
+    <main class="max-w-md mx-auto p-4">
+
+        <section id="pagLancamento" class="space-y-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm space-y-4">
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="fluxo_despesa" onclick="setFluxo('Despesa')" class="py-2.5 rounded-xl font-bold text-xs bg-red-500 text-white">Despesa</button>
+                    <button type="button" id="fluxo_receita" onclick="setFluxo('Receita')" class="py-2.5 rounded-xl font-bold text-xs bg-gray-100 text-gray-600 border">Receita</button>
+                    <button type="button" id="fluxo_cartao" onclick="setFluxo('Cartão')" class="py-2.5 rounded-xl font-bold text-xs bg-gray-100 text-gray-600 border">Cartão de Crédito</button>
+                    <button type="button" id="fluxo_transferencia" onclick="setFluxo('Transferência')" class="py-2.5 rounded-xl font-bold text-xs bg-gray-100 text-gray-600 border">Transferência</button>
+                </div>
+
+                <form id="financeForm" class="space-y-4 relative">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Quanto?</label>
+                        <input type="number" id="valorInput" inputmode="decimal" pattern="[0-9]*" step="0.01" required placeholder="0,00" class="w-full p-3 border rounded-xl text-xl font-bold focus:ring-2 focus:ring-purple-500 outline-none" oninput="calcularPreviaParcela()">
+                    </div>
+
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">O quê? (Descrição)</label>
+                        <input type="text" id="descricaoInput" autocomplete="off" required placeholder="Ex: Mercado" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" oninput="lidarAutocomplete(this.value)">
+                        <div id="boxSugestoes" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border shadow-2xl rounded-xl z-50 overflow-hidden"></div>
+                    </div>
+
+                    <div id="blocoOpcoesAvancadas" class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="btnParcelado" onclick="toggleParcelado()" class="hidden py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider">PARCELAR COMPRA?</button>
+                            <button type="button" id="btnRecorrente" onclick="toggleRecorrente()" class="hidden py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider">FIXO MENSAL?</button>
+                        </div>
+                        
+                        <div id="wrapperNumeroParcelas" class="hidden">
+                            <label class="block text-[10px] font-bold text-purple-400 uppercase mb-1">Quantas parcelas?</label>
+                            <select id="numParcelas" class="w-full p-3 border rounded-xl text-xs font-bold bg-purple-50 text-purple-900 focus:outline-none" onchange="calcularPreviaParcela()">
+                                <option value="2">2x parcelas</option><option value="3">3x parcelas</option><option value="4">4x parcelas</option><option value="5">5x parcelas</option><option value="6">6x parcelas</option><option value="10">10x parcelas</option><option value="12">12x parcelas</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p id="previewParcelamento" class="hidden text-[10px] text-purple-700 font-bold bg-purple-50 p-2 rounded-lg border border-purple-100"></p>
+
+                    <div id="blocoCategorias" class="grid grid-cols-2 gap-2">
+                        <select id="macroCat" class="p-3 border rounded-xl text-xs bg-white" onchange="alwaysUpdateMicros()">
+                            <option value="">Macro</option>
+                        </select>
+                        <select id="microCat" class="p-3 border rounded-xl text-xs bg-gray-50" disabled><option value="">Micro</option></select>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label id="labelContaOrigem" class="block text-xs font-bold text-gray-400 uppercase mb-1">Conta / Forma de Pagamento</label>
+                            <select id="contaOrigem" required class="w-full p-3 border rounded-xl text-xs bg-white" onchange="autoAjustarVencimento()"></select>
+                        </div>
+                        
+                        <div id="blocoContaDestino" class="hidden">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Para onde vai o dinheiro?</label>
+                            <select id="contaDestino" class="w-full p-3 border rounded-xl text-xs bg-white"></select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="dataGasto" class="p-3 border rounded-xl text-xs" onchange="autoAjustarVencimento()">
+                        <input type="date" id="dataFatura" class="p-3 border rounded-xl text-xs">
+                    </div>
+
+                    <button type="submit" id="btnSalvar" class="w-full bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-sm">Salvar</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- NOVA SEÇÃO: Tela de Visualização de Contas e Saldos Vivos -->
+        <section id="pagContas" class="hidden space-y-4">
+            <div class="bg-purple-900 text-white p-5 rounded-2xl shadow-md text-center">
+                <p class="text-xs font-bold uppercase opacity-70 tracking-wider">Saldo Geral Consolidado</p>
+                <h2 id="saldoGeralTotal" class="text-3xl font-black mt-1">R$ 0,00</h2>
+                <p class="text-[9px] opacity-50 mt-1">*Não inclui faturas de cartões pendentes</p>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider">Contas & Carteiras</h3>
+                    <button onclick="sincronizarConfiguracoesPlanilha()" class="material-icons text-purple-800 text-lg">refresh</button>
+                </div>
+                <div id="listaSaldosContas" class="space-y-2 divide-y divide-gray-100">
+                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando saldos...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="pagDashboard" class="hidden space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm text-center space-y-6">
+                <div>
+                    <p id="dashMes" class="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando...</p>
+                    <h2 class="text-3xl font-black text-gray-800">Fechamento</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                        <p class="text-[10px] font-bold text-emerald-800 uppercase">Receita</p>
+                        <p id="dashReceita" class="text-lg font-bold text-emerald-600">R$ 0,00</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
+                        <p class="text-[10px] font-bold text-red-800 uppercase">Gastos</p>
+                        <p id="dashGastos" class="text-lg font-bold text-red-600">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="p-5 bg-purple-900 rounded-3xl text-white relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-xs font-bold opacity-70 uppercase mb-1">Taxa de Investimento (Z%)</p>
+                        <p id="dashTaxa" class="text-4xl font-black">0%</p>
+                    </div>
+                </div>
+                <div class="text-left space-y-3">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center space-x-2">
+                        <span class="material-icons text-purple-600 text-lg">psychology</span><span>Motor de Insights</span>
+                    </h3>
+                    <div id="containerInsights" class="space-y-2">
+                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar os dados vivos.</p>
+                    </div>
+                </div>
+                
+                <button onclick="puxarDashboardReal()" id="btnRecarregarDash" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold py-3 text-xs border border-purple-200 rounded-xl transition active:scale-98">
+                    ATUALIZAR DADOS DO SHEETS
+                </button>
+            </div>
+        </section>
+
+        <section id="pagExtrato" class="hidden space-y-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-gray-800">Extrato Recente</h2>
+                    <button onclick="puxarExtratoReal()" class="material-icons text-purple-800">refresh</button>
+                </div>
+                <div id="containerExtrato" class="space-y-3 divide-y divide-gray-50"></div>
+            </div>
+        </section>
+
+        <section id="pagOrcamento" class="hidden">
+            <div class="bg-white p-5 rounded-2xl shadow-sm">
+                <select id="filtroMesOrcamento" class="w-full p-3 border rounded-xl mb-4 font-bold" onchange="renderTelaOrcamentos()"></select>
+                <div id="editorOrcamentos" class="space-y-2"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6gmdfsXQOk0ioXayZiEVUYsqEbUaII7ljAWcHOHAKXST6worW6no6YIlF7oykIT0fNA/exec";
+
+        let bancoContas = [];
+        let dadosCategorias = {};
+        let orcamentosBase = {};
+        let saldosVivosContas = {}; // Armazena os saldos calculados vindos do back-end
+
+        let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
+        let orcamentos = JSON.parse(localStorage.getItem('orc_ianne')) || {};
+        let fluxoAtual = 'Despesa';
+        let menuAberto = false;
+        let isParcelado = false;
+        let isRecorrente = false;
+
+        function sincronizarConfiguracoesPlanilha() {
+            const status = document.getElementById('statusApp');
+            if(status) {
+                status.textContent = "SYNC";
+                status.className = "text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse";
+            }
+            const script = document.createElement('script');
+            script.src = WEB_APP_URL + "?callback=processarConfiguracoes&acao=puxarConfiguracoes&t=" + Date.now();
+            document.body.appendChild(script);
+        }
+
+        window.processarConfiguracoes = function(r) {
+            if(r.result === "success") {
+                bancoContas = r.contas.map(c => ({ nome: c.Nome, tipo: c.Tipo, banco: c.Banco }));
+                saldosVivosContas = r.saldos || {}; // Recebe o objeto mapeado
+                dadosCategorias = {};
+                orcamentosBase = {};
+                
+                r.categorias.forEach(cat => {
+                    const macro = cat.Macro;
+                    const micro = cat.Micro;
+                    if(macro) {
+                        if(!dadosCategorias[macro]) dadosCategorias[macro] = [];
+                        if(micro && !dadosCategorias[macro].includes(micro)) {
+                            dadosCategorias[macro].push(micro);
+                        }
+                        orcamentosBase[macro] = 500; 
+                    }
+                });
+
+                const selectMacro = document.getElementById('macroCat');
+                selectMacro.innerHTML = '<option value="">Macro</option>';
+                Object.keys(dadosCategorias).forEach(m => {
+                    const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+                    selectMacro.appendChild(opt);
+                });
+
+                const status = document.getElementById('statusApp');
+                status.textContent = "ON";
+                status.className = "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+
+                renderTelaSaldos(); // Renderiza os saldos vivos atualizados
+                setFluxo(fluxoAtual);
+                renderTelaOrcamentos();
+            } else {
+                alert("Erro ao sincronizar dados da planilha: " + r.message);
+            }
+        }
+
+        // Lógica de Renderização Dinâmica da tela de Saldos
+        function renderTelaSaldos() {
+            const container = document.getElementById('listaSaldosContas');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            let totalConsolidado = 0;
+
+            bancoContas.forEach(c => {
+                const saldoVal = saldosVivosContas[c.nome] || 0;
+                
+                // Soma apenas contas que guardam dinheiro vivo (ignora limite de cartão no consolidado)
+                if(c.tipo !== 'Cartão de Crédito') {
+                    totalConsolidado += saldoVal;
+                }
+
+                const div = document.createElement('div');
+                div.className = "py-3.5 flex justify-between items-center first:pt-1";
+                
+                let formatador = saldoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                let corTextoSaldo = "text-gray-800";
+                
+                if (c.tipo === 'Cartão de Crédito') {
+                    // Cartão mostra o acumulado gasto (exibido em roxo/neutro)
+                    corTextoSaldo = "text-purple-700 font-bold";
+                    formatador = "Fatura: R$ " + Math.abs(saldoVal).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                } else {
+                    if(saldoVal > 0) corTextoSaldo = "text-emerald-600 font-bold";
+                    if(saldoVal < 0) corTextoSaldo = "text-red-600 font-bold";
+                    formatador = "R$ " + formatador;
+                }
+
+                // Ícones estilizados de acordo com o tipo de conta cadastrado na planilha
+                let icone = "account_balance";
+                if(c.tipo === "Investimentos" || c.tipo === "Poupança") icone = "trending_up";
+                if(c.tipo === "Dinheiro" || c.tipo === "Carteira") icone = "payments";
+                if(c.tipo === "Cartão de Crédito") icone = "credit_card";
+
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="material-icons text-gray-400 text-xl">${icone}</span>
+                        <div>
+                            <p class="text-xs font-bold text-gray-800 leading-tight">${c.nome}</p>
+                            <p class="text-[9px] text-gray-400 font-medium">${c.banco || c.tipo}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs ${corTextoSaldo}">${formatador}</p>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('saldoGeralTotal').textContent = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('menuLateral');
+            const overlay = document.getElementById('menuOverlay');
+            menuAberto = !menuAberto;
+            menu.style.transform = menuAberto ? 'translateX(0)' : 'translateX(-100%)';
+            overlay.classList.toggle('opacity-50', menuAberto);
+            overlay.classList.toggle('pointer-events-none', !menuAberto);
+        }
+
+        function selecionarMenu(id, titulo) {
+            if(menuAberto) toggleMenu();
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById('tituloPagina').textContent = titulo;
+            if(id === 'pagExtrato') puxarExtratoReal();
+            if(id === 'pagDashboard') puxarDashboardReal();
+            if(id === 'pagOrcamento') renderTelaOrcamentos();
+            // Ao clicar na aba de contas, força uma atualização em segundo plano para precisão milimétrica
+            if(id === 'pagContas') renderTelaSaldos();
+        }
+
+        function lidarAutocomplete(txt) {
+            const box = document.getElementById('boxSugestoes');
+            box.innerHTML = '';
+            if(fluxoAtual === 'Transferência' || !txt || txt.length < 2) { box.classList.add('hidden'); return; }
+            const matches = memoria.filter(m => m.desc.toLowerCase().includes(txt.toLowerCase())).slice(0, 3);
+            if(matches.length === 0) { box.classList.add('hidden'); return; }
+            box.classList.remove('hidden');
+            matches.forEach(m => {
+                const div = document.createElement('div');
+                div.className = "p-3 text-xs font-bold text-gray-600 hover:bg-purple-50 cursor-pointer flex justify-between";
+                div.innerHTML = `<span>${m.desc}</span><span class="text-[9px] opacity-50">${m.macro}</span>`;
+                div.onclick = () => {
+                    document.getElementById('descricaoInput').value = m.desc;
+                    setFluxo(m.tipo);
+                    document.getElementById('macroCat').value = m.macro;
+                    alwaysUpdateMicros();
+                    document.getElementById('microCat').value = m.micro;
+                    document.getElementById('contaOrigem').value = m.conta;
+                    box.classList.add('hidden');
+                };
+                box.appendChild(div);
+            });
+        }
+
+        function puxarDashboardReal() {
+            const btn = document.getElementById('btnRecarregarDash');
+            btn.disabled = true;
+            btn.textContent = "CONECTANDO AO GOOGLE...";
+            const script = document.createElement('script');
+            script.src = WEB_APP_URL + "?callback=renderDash&acao=puxarDashboard&t=" + Date.now();
+            document.body.appendChild(script);
+        }
+
+        window.renderDash = function(r) {
+            const btn = document.getElementById('btnRecarregarDash');
+            btn.disabled = false; btn.textContent = "ATUALIZAR DADOS DO SHEETS";
+            if(r.result === "success") {
+                const d = r.dados;
+                document.getElementById('dashMes').textContent = d.mes;
+                document.getElementById('dashReceita').textContent = "R$ " + d.receita.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                document.getElementById('dashGastos').textContent = "R$ " + d.gastos.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                const pctInv = d.taxaInv * 100;
+                document.getElementById('dashTaxa').textContent = pctInv.toFixed(1) + "%";
+                const container = document.getElementById('containerInsights'); container.innerHTML = '';
+                if(pctInv >= 20) {
+                    criarCaixaInsight(container, "Sua taxa de investimento está excelente (" + pctInv.toFixed(0) + "%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!", "border-emerald-500", "bg-emerald-50", "text-emerald-800");
+                } else if (pctInv > 0 && pctInv < 20) {
+                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
+                } else {
+                    criarCaixaInsight(container, "Aviso crítico: Seus custos fixos ou variáveis superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
+                }
+            } else { alert("Erro ao ler o Dashboard: " + r.message); }
+        }
+
+        function criarCaixaInsight(container, texto, borda, fundo, textoCor) {
+            const div = document.createElement('div'); 
+            div.className = `p-3.5 border-l-4 ${borda} ${fundo} ${textoCor} rounded-xl text-xs font-medium leading-relaxed shadow-sm`;
+            div.textContent = texto; container.appendChild(div);
+        }
+
+        function puxarExtratoReal() {
+            const container = document.getElementById('containerExtrato'); container.innerHTML = '<p class="text-center text-xs p-4 animate-pulse">Buscando na planilha...</p>';
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=renderExt&acao=puxarExtrato&t=" + Date.now();
+            document.body.appendChild(script);
+        }
+
+        window.renderExt = function(r) {
+            const container = document.getElementById('containerExtrato'); container.innerHTML = '';
+            if(r.result === "success" && r.dados && r.dados.length > 0) {
+                r.dados.forEach(i => {
+                    const div = document.createElement('div'); div.className = "py-3 flex justify-between items-center";
+                    let cor = i.tipo === 'Receita' ? 'text-emerald-600' : 'text-red-600';
+                    div.innerHTML = `
+                        <div class="max-w-[70%]">
+                            <p class="text-xs font-bold text-gray-800">${i.descricao}</p>
+                            <p class="text-[9px] text-gray-400">${i.dataGasto} · ${i.conta}</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <p class="text-xs font-bold ${cor}">R$ ${parseFloat(i.valor).toFixed(2)}</p>
+                            <button onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg">delete</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } else { container.innerHTML = '<p class="text-center text-xs text-gray-400 p-4">Nenhum gasto registrado.</p>'; }
+        }
+
+        function excluirLinha(id) {
+            if(!confirm("Deseja mesmo excluir?")) return;
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=posExcluir&acao=excluir&idLinha=" + id;
+            document.body.appendChild(script);
+        }
+        window.posExcluir = function(r) { if(r.result === "success") { sincronizarConfiguracoesPlanilha(); puxarExtratoReal(); } }
+
+        function setFluxo(t) {
+            fluxoAtual = t; isParcelado = false; isRecorrente = false;
+            document.getElementById('wrapperNumeroParcelas').classList.add('hidden');
+            document.getElementById('previewParcelamento').classList.add('hidden');
+            document.querySelectorAll('#pagLancamento button').forEach(b => b.className = "py-2.5 rounded-xl font-bold text-xs bg-gray-100 text-gray-600 border");
+            
+            const map = { 'Despesa': 'fluxo_despesa', 'Receita': 'fluxo_receita', 'Cartão': 'fluxo_cartao', 'Transferência': 'fluxo_transferencia' };
+            const cor = { 'Despesa': 'bg-red-500', 'Receita': 'bg-emerald-500', 'Cartão': 'bg-purple-600', 'Transferência': 'bg-blue-500' };
+            
+            if(document.getElementById(map[t])) document.getElementById(map[t]).className = `py-2.5 rounded-xl font-bold text-xs ${cor[t]} text-white`;
+            document.getElementById('btnParcelado').classList.toggle('hidden', t !== 'Cartão');
+            document.getElementById('btnRecorrente').classList.toggle('hidden', t === 'Cartão' || t === 'Transferência');
+            document.getElementById('btnParcelado').className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+            document.getElementById('btnRecorrente').className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+            document.getElementById('blocoCategorias').classList.toggle('hidden', t === 'Transferência');
+            document.getElementById('blocoContaDestino').classList.toggle('hidden', t !== 'Transferência');
+
+            const selectOrigem = document.getElementById('contaOrigem'); selectOrigem.innerHTML = '';
+            bancoContas.forEach(c => {
+                if(t === 'Cartão' && c.tipo !== 'Cartão de Crédito') return;
+                if(t !== 'Cartão' && c.tipo === 'Cartão de Crédito') return;
+                const opt = document.createElement('option'); opt.value = c.nome; opt.textContent = c.nome;
+                selectOrigem.appendChild(opt);
+            });
+            if(t === 'Transferência') {
+                const selectDestino = document.getElementById('contaDestino'); selectDestino.innerHTML = '';
+                bancoContas.forEach(c => {
+                    if(c.tipo === 'Cartão de Crédito') return;
+                    const opt = document.createElement('option'); opt.value = c.nome; opt.textContent = c.nome;
+                    selectDestino.appendChild(opt);
+                });
+            }
+            autoAjustarVencimento();
+        }
+
+        function toggleParcelado() {
+            isParcelado = !isParcelado;
+            const btn = document.getElementById('btnParcelado');
+            const wrapperSelect = document.getElementById('wrapperNumeroParcelas');
+            if(isParcelado) {
+                btn.className = "py-2 border border-purple-300 rounded-xl text-[10px] font-bold text-purple-800 bg-purple-50 uppercase tracking-wider";
+                wrapperSelect.classList.remove('hidden');
+            } else {
+                btn.className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+                wrapperSelect.classList.add('hidden');
+            }
+            calcularPreviaParcela();
+        }
+
+        function toggleRecorrente() { 
+            isRecorrente = !isRecorrente; const btn = document.getElementById('btnRecorrente');
+            btn.className = isRecorrente ? "py-2 border border-emerald-300 rounded-xl text-[10px] font-bold text-emerald-800 bg-emerald-50 uppercase tracking-wider" : "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+        }
+
+        function calcularPreviaParcela() {
+            const v = parseFloat(document.getElementById('valorInput').value) || 0;
+            const n = parseInt(document.getElementById('numParcelas').value);
+            const p = document.getElementById('previewParcelamento');
+            if(isParcelado && v > 0) { p.textContent = `${n}x de R$ ${(v/n).toFixed(2)}`; p.classList.remove('hidden'); }
+            else p.classList.add('hidden');
+        }
+
+        function autoAjustarVencimento() {
+            const d = document.getElementById('dataGasto').value; if(!d) return;
+            const dt = new Date(d + "T00:00:00");
+            if(fluxoAtual === 'Cartão') {
+                let m = dt.getMonth() + 1; if(dt.getDate() >= 29) m++;
+                document.getElementById('dataFatura').value = new Date(dt.getFullYear(), m, 5).toISOString().split('T')[0];
+            } else document.getElementById('dataFatura').value = d;
+        }
+
+        function alwaysUpdateMicros() {
+            const m = document.getElementById('macroCat').value;
+            const s = document.getElementById('microCat'); s.innerHTML = '';
+            if(m && dadosCategorias[m] && dadosCategorias[m].length > 0) {
+                s.disabled = false; s.className = "p-3 border rounded-xl text-xs bg-white";
+                dadosCategorias[m].forEach(mi => { const o = document.createElement('option'); o.value = mi; o.textContent = mi; s.appendChild(o); });
+            } else { s.disabled = true; s.className = "p-3 border rounded-xl text-xs bg-gray-50"; }
+        }
+
+        document.getElementById('financeForm').onsubmit = function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSalvar');
+            btn.disabled = true; btn.textContent = "GRAVANDO...";
+            
+            const p = new URLSearchParams({
+                callback: 'posSalvar', 
+                tipo: fluxoAtual, 
+                valor: document.getElementById('valorInput').value,
+                descricao: document.getElementById('descricaoInput').value,
+                macro: fluxoAtual === 'Transferência' ? 'TRANSFERÊNCIA' : document.getElementById('macroCat').value,
+                micro: fluxoAtual === 'Transferência' ? 'INTERNA' : document.getElementById('microCat').value, 
+                conta: document.getElementById('contaOrigem').value,
+                contaDestino: document.getElementById('contaDestino').value,
+                dataGasto: document.getElementById('dataGasto').value, 
+                dataFatura: document.getElementById('dataFatura').value,
+                parcelado: isParcelado ? "true" : "false", 
+                numParcelas: isParcelado ? document.getElementById('numParcelas').value : 1, 
+                recorrente: isRecorrente ? "true" : "false"
+            });
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?" + p.toString();
+            document.body.appendChild(script);
+        };
+
+        window.posSalvar = function(r) {
+            const btn = document.getElementById('btnSalvar');
+            if(r.result === "success") {
+                const desc = document.getElementById('descricaoInput').value;
+                if(fluxoAtual !== 'Transferência') {
+                    memoria = memoria.filter(m => m.desc !== desc);
+                    memoria.unshift({ desc, tipo: fluxoAtual, macro: document.getElementById('macroCat').value, micro: document.getElementById('microCat').value, conta: document.getElementById('contaOrigem').value });
+                    localStorage.setItem('mem_ianne', JSON.stringify(memoria.slice(0, 50)));
+                }
+                alert("Lançamento Realizado!"); location.reload();
+            } else {
+                alert("Erro ao salvar: " + r.message);
+                btn.disabled = false; btn.textContent = "SALVAR";
+            }
+        };
+
+        function initMonths() {
+            const f = document.getElementById('filtroMesOrcamento'); if(!f) return; f.innerHTML = '';
+            const names = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+            const now = new Date();
+            for(let i=0; i<6; i++) {
+                let d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+                let o = document.createElement('option'); o.value = `${names[d.getMonth()]}/${d.getFullYear()}`;
+                o.textContent = `${names[d.getMonth()].charAt(0).toUpperCase()+names[d.getMonth()].slice(1)} / ${d.getFullYear()}`;
+                f.appendChild(o);
+            }
+        }
+
+        function renderTelaOrcamentos() {
+            const container = document.getElementById('editorOrcamentos'); if(!container) return; container.innerHTML = '';
+            const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
+            const mes = selectMes.value;
+            if(!orcamentos[mes]) orcamentos[mes] = { ...orcamentosBase };
+            Object.keys(orcamentosBase).forEach(m => {
+                const v = orcamentos[mes][m] !== undefined ? orcamentos[mes][m] : orcamentosBase[m];
+                const div = document.createElement('div'); div.className = "flex justify-between items-center bg-gray-50 p-3 rounded-xl border text-xs font-bold";
+                div.innerHTML = `<span>${m}</span><div>R$ <input type="number" value="${v}" class="w-20 p-1 border rounded text-right" onchange="orcamentos['${mes}']['${m}']=parseFloat(this.value); localStorage.setItem('orc_ianne', JSON.stringify(orcamentos))"></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('dataGasto').value = hoje;
+        initMonths();
+        sincronizarConfiguracoesPlanilha();
+    </script>
+</body>
+</html>
