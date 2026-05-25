@@ -232,7 +232,7 @@
         let orcamentosBase = {};
         let saldosVivosContas = {};
         let listaExtratoGlobal = []; 
-        let ultimoFiltroFluxo = 'TODOS';
+        let ultimoFiltroFluxo = 'TODOS'; // Declarado no escopo global para o filtro funcionar de primeira
         let gastosAgrupadosMesMacro = {}; 
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -243,7 +243,6 @@
         let isParcelado = false;
         let isRecorrente = false;
 
-        // --- MÁSCARA DE MOEDA EM TEMPO REAL ---
         function mascaraMoeda(input) {
             let valor = input.value.replace(/\D/g, "");
             valor = (valor / 100).toFixed(2) + "";
@@ -251,14 +250,12 @@
             valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
             input.value = valor ? "R$ " + valor : "";
             
-            // Atualiza o input oculto estrutural com o float puro
             let numPuro = input.value.replace("R$ ", "").replace(/\./g, "").replace(",", ".");
             document.getElementById('valorInput').value = parseFloat(numPuro) || 0;
             calcularPreviaParcela();
             checarAlertaOrcamento();
         }
 
-        // --- SISTEMA OFFLINE (QUEUE CACHE) ---
         function obterFila() { return JSON.parse(localStorage.getItem('fila_financeiro_ianne')) || []; }
         function salvarFila(fila) { 
             localStorage.setItem('fila_financeiro_ianne', JSON.stringify(fila)); 
@@ -279,16 +276,14 @@
             const item = fila[0];
             const p = new URLSearchParams(item);
             
-            // Tenta enviar para a rede
             fetch(WEB_APP_URL + "?" + p.toString(), { mode: 'no-cors' })
             .then(() => {
-                fila.shift(); // Remove o primeiro enviado com sucesso
+                fila.shift();
                 salvarFila(fila);
-                processarFilaOffline(); // Avança recursivo
-            }).catch(e => console.log("Rede instável, tentando mais tarde...", e));
+                processarFilaOffline();
+            }).catch(e => console.log("Rede instável...", e));
         }
 
-        // Monitorar conexão voltando
         window.addEventListener('online', () => {
             document.getElementById('statusApp').textContent = "SYNC";
             document.getElementById('statusApp').className = "text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse";
@@ -346,7 +341,6 @@
                     selectMacro.appendChild(opt);
                 });
 
-                // Preencher filtro de contas do extrato
                 const sFiltroExt = document.getElementById('filtroContaExtrato');
                 sFiltroExt.innerHTML = '<option value="TODAS">Todas as Contas</option>';
                 bancoContas.forEach(c => {
@@ -363,24 +357,19 @@
             }
         }
 
-        // --- REGRA DE NEGÓCIO: FECHAMENTO DE FATURA (MELHOR DIA DE COMPRA) ---
         function autoAjustarVencimento() {
             const d = document.getElementById('dataGasto').value; if(!d) return;
             const dt = new Date(d + "T00:00:00");
             
             if(fluxoAtual === 'Cartão') {
                 let m = dt.getMonth() + 1; 
-                // REGRA ATUALIZADA: Se comprar a partir do dia 29, a fatura corrente já fechou. Joga para o mês subsequente.
-                if(dt.getDate() >= 29) {
-                    m++;
-                }
+                if(dt.getDate() >= 29) { m++; }
                 document.getElementById('dataFatura').value = new Date(dt.getFullYear(), m, 5).toISOString().split('T')[0];
             } else {
                 document.getElementById('dataFatura').value = d;
             }
         }
 
-        // --- REAL-TIME BUDGET CHECKER ---
         function checarAlertaOrcamento() {
             const macro = document.getElementById('macroCat').value;
             const valor = parseFloat(document.getElementById('valorInput').value) || 0;
@@ -396,10 +385,7 @@
             const gastoAtual = gastosAgrupadosMesMacro[txtMes] && gastosAgrupadosMesMacro[txtMes][macro] ? gastosAgrupadosMesMacro[txtMes][macro] : 0;
             const restante = planejado - gastoAtual;
 
-            if(planejado === 0) {
-                alerta.classList.add('hidden');
-                return;
-            }
+            if(planejado === 0) { alerta.classList.add('hidden'); return; }
 
             alerta.classList.remove('hidden');
             if(valor > restante) {
@@ -424,7 +410,7 @@
 
             bancoContas.forEach(c => {
                 const saldoVal = saldosVivosContas[c.nome] || 0;
-                if(c.tipo !== 'Cartão de Crédito') totalConsolidado += saldoVal;
+                if(c.tipo !== 'Cartão de Crédito') { totalConsolidado += saldoVal; } // Correção de sintaxe aplicada aqui
 
                 const div = document.createElement('div'); div.className = "py-3.5 flex justify-between items-center first:pt-1";
                 let formatador = saldoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -510,7 +496,6 @@
                 const pctInv = d.taxaInv * 100;
                 document.getElementById('dashTaxa').textContent = pctInv.toFixed(1) + "%";
 
-                // Armazena no histórico de aportes local
                 historicoTaxasLocal[d.mes] = pctInv;
                 localStorage.setItem('hist_taxas_ianne', JSON.stringify(historicoTaxasLocal));
 
@@ -529,12 +514,11 @@
             }
         }
 
-        // --- GRÁFICO HISTÓRICO DE TAXAS (MÉTODO VISUAL DE BARRAS/SPARKLINES) ---
         function renderSparklinesTaxas() {
             const container = document.getElementById('historicoTaxasLinhas'); if(!container) return;
             container.innerHTML = '';
             
-            const chaves = Object.keys(historicoTaxasLocal).sort().slice(-4); // Mostra os últimos 4 meses mapeados
+            const chaves = Object.keys(historicoTaxasLocal).sort().slice(-4);
             if(chaves.length === 0) {
                 container.innerHTML = '<p class="text-gray-400 italic font-medium text-[11px]">Sem histórico acumulado ainda.</p>';
                 return;
@@ -542,7 +526,7 @@
 
             chaves.forEach(mes => {
                 const taxa = historicoTaxasLocal[mes] || 0;
-                const pctLimitada = Math.max(0, Math.min(100, taxa)); // Trava entre 0 e 100 para a barra
+                const pctLimitada = Math.max(0, Math.min(100, taxa));
                 let corBarra = "bg-purple-600";
                 if(taxa >= 20) corBarra = "bg-emerald-500";
                 if(taxa <= 0) corBarra = "bg-red-500";
@@ -580,7 +564,6 @@
                 listaExtratoGlobal = r.dados;
                 localStorage.setItem('cache_extrato', JSON.stringify(r.dados));
                 
-                // Recalcular os gastos agrupados para bater no teto de orçamentos dinamicamente
                 gastosAgrupadosMesMacro = {};
                 r.dados.forEach(item => {
                     if(item.tipo !== 'Receita' && item.macro !== 'TRANSFERÊNCIA') {
@@ -596,7 +579,6 @@
         }
 
         function getMesAnoStringConvertida(dataBrStr) {
-            // Converte "24/05/2026" para "maio/2026"
             const names = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
             const partes = dataBrStr.split('/');
             if(partes.length !== 3) return "";
@@ -604,12 +586,10 @@
             return `${names[mIdx]}/${partes[2]}`;
         }
 
-        // --- FILTROS INTELIGENTES FLUXO + CONTA ---
         function filtrarExtrato(tipoFluxo) {
             ultimoFiltroFluxo = tipoFluxo;
             const contaSelecionada = document.getElementById('filtroContaExtrato').value;
 
-            // Atualiza botões
             document.querySelectorAll('#pagExtrato button[id^="f_btn_"]').forEach(b => {
                 b.className = "px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border";
             });
@@ -722,7 +702,6 @@
             } else { s.disabled = true; s.className = "p-3 border rounded-xl text-xs bg-gray-50"; }
         }
 
-        // --- SALVAR COM INTELIGÊNCIA LOCAL SYNC / FILA OFFLINE ---
         document.getElementById('financeForm').onsubmit = function(e) {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
@@ -743,20 +722,17 @@
                 recorrente: isRecorrente ? "true" : "false"
             };
 
-            // Se o app estiver offline, salva na fila local e simula sucesso imediato!
             if (!navigator.onLine) {
                 let fila = obterFila();
                 fila.push({ ...paramsObjeto, acao: 'salvar' });
                 salvarFila(fila);
                 
-                // Trata a memória inteligente
                 comitarMemoriaLocal(paramsObjeto.descricao);
                 alert("App em Modo Offline: Lançamento guardado no celular e será sincronizado assim que houver sinal!");
                 location.reload();
                 return;
             }
 
-            // Fluxo Online Tradicional JSONP
             const p = new URLSearchParams({ callback: 'posSalvar', ...paramsObjeto });
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?" + p.toString();
             document.body.appendChild(script);
@@ -792,7 +768,6 @@
             }
         }
 
-        // --- METAS VS REALIZADO DINÂMICO ---
         function renderTelaOrcamentos() {
             const container = document.getElementById('editorOrcamentos'); if(!container) return; container.innerHTML = '';
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
@@ -802,8 +777,6 @@
             
             Object.keys(orcamentosBase).forEach(m => {
                 const vPlanejado = orcamentos[mes][m] !== undefined ? orcamentos[mes][m] : 0;
-                
-                // Calcula o realizado deste mês para esta categoria vindo do extrato local guardado
                 const vRealizado = gastosAgrupadosMesMacro[mes] && gastosAgrupadosMesMacro[mes][m] ? gastosAgrupadosMesMacro[mes][m] : 0;
                 const vRestante = vPlanejado - vRealizado;
 
@@ -830,7 +803,6 @@
         initMonths();
         sincronizarConfiguracoesPlanilha();
         
-        // Verifica se há fila ao abrir o aplicativo
         if(navigator.onLine) { processarFilaOffline(); }
     </script>
 </body>
