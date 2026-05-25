@@ -3,62 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v6.5</title>
+    <title>Finanças Ianne v6.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         .sugestao-item { border-bottom: 1px solid #f3f4f6; }
         .sugestao-item:last-child { border-bottom: none; }
-        #menuLateral { transition: transform 0.3s ease-in-out; }
+        body { padding-bottom: 90px; } /* Evita que o conteúdo fique escondido atrás da barra fixa inferior */
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen pb-12 overflow-x-hidden">
+<body class="bg-gray-100 font-sans min-h-screen overflow-x-hidden">
 
     <header class="bg-purple-800 text-white p-4 shadow-md sticky top-0 z-50">
         <div class="max-w-md mx-auto flex justify-between items-center relative">
-            <button onclick="toggleMenu()" class="p-1 focus:outline-none rounded-lg active:bg-purple-700 transition">
-                <span class="material-icons text-2xl">menu</span>
-            </button>
-            <h1 id="tituloPagina" class="text-xl font-bold text-center flex-1 pr-6">Novo Lançamento</h1>
-            <div class="flex items-center space-x-2 absolute right-0">
+            <div class="flex items-center space-x-2">
+                <span class="material-icons text-purple-300">insights</span>
+                <span id="tituloPagina" class="text-lg font-bold">Insights do Mês</span>
+            </div>
+            <div class="flex items-center space-x-2">
                 <span id="contadorFila" class="hidden text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full font-bold">0</span>
-                <span id="statusApp" class="text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse">SYNC</span>
+                <span id="statusApp" class="text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold animate-pulse">SYNC</span>
             </div>
         </div>
     </header>
 
-    <div id="menuLateral" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-gray-100 z-[60] transform -translate-x-full shadow-2xl flex flex-col">
-        <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-purple-900">
-            <div class="flex items-center space-x-2">
-                <span class="material-icons text-purple-300">insights</span>
-                <span class="font-bold text-lg">Menu Inteligente</span>
-            </div>
-            <button onclick="toggleMenu()" class="text-gray-400"><span class="material-icons">close</span></button>
-        </div>
-        <nav class="flex-1 p-4 space-y-1">
-            <button onclick="selecionarMenu('pagLancamento', 'Novo Lançamento')" id="m_pagLancamento" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-purple-800 text-white">
-                <span class="material-icons text-lg">add_circle</span><span>Lançamentos</span>
-            </button>
-            <button onclick="selecionarMenu('pagContas', 'Minhas Contas')" id="m_pagContas" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
-                <span class="material-icons text-lg">account_balance_wallet</span><span>Minhas Contas</span>
-            </button>
-            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="m_pagDashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
-                <span class="material-icons text-lg">auto_awesome</span><span>Insights do Mês</span>
-            </button>
-            <button onclick="selecionarMenu('pagExtrato', 'Histórico Recente')" id="m_pagExtrato" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
-                <span class="material-icons text-lg">history</span><span>Extrato / Excluir</span>
-            </button>
-            <button onclick="selecionarMenu('pagOrcamento', 'Metas vs Realizado')" id="m_pagOrcamento" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800">
-                <span class="material-icons text-lg">track_changes</span><span>Planejamento</span>
-            </button>
-        </nav>
-        <div class="p-4 border-t border-gray-800 text-[10px] text-gray-600 text-center font-mono">IANNE FINANCE v6.5</div>
-    </div>
-    <div id="menuOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black opacity-0 pointer-events-none transition-opacity duration-300 z-55"></div>
-
     <main class="max-w-md mx-auto p-4">
 
-        <section id="pagLancamento" class="space-y-4">
+        <section id="pagDashboard" class="space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm text-center space-y-6">
+                <div>
+                    <p id="dashMes" class="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando...</p>
+                    <h2 class="text-3xl font-black text-gray-800">Fechamento</h2>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                        <p class="text-[10px] font-bold text-emerald-800 uppercase">Receita</p>
+                        <p id="dashReceita" class="text-lg font-bold text-emerald-600">R$ 0,00</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
+                        <p class="text-[10px] font-bold text-red-800 uppercase">Gastos</p>
+                        <p id="dashGastos" class="text-lg font-bold text-red-600">R$ 0,00</p>
+                    </div>
+                </div>
+                <div class="p-5 bg-purple-900 rounded-3xl text-white relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-xs font-bold opacity-70 uppercase mb-1">Taxa de Investimento</p>
+                        <p id="dashTaxa" class="text-4xl font-black">0%</p>
+                    </div>
+                </div>
+
+                <div class="text-left space-y-2 border-t pt-4">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Evolução de Aportes</h4>
+                    <div id="historicoTaxasLinhas" class="space-y-1.5 text-xs font-bold"></div>
+                </div>
+
+                <div class="text-left space-y-3">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center space-x-2">
+                        <span class="material-icons text-purple-600 text-lg">psychology</span><span>Motor de Insights</span>
+                    </h3>
+                    <div id="containerInsights" class="space-y-2">
+                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar os dados vivos.</p>
+                    </div>
+                </div>
+                
+                <button onclick="puxarDashboardReal()" id="btnRecarregarDash" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold py-3 text-xs border border-purple-200 rounded-xl transition active:scale-98">
+                    ATUALIZAR DADOS DO SHEETS
+                </button>
+            </div>
+        </section>
+
+        <section id="pagLancamento" class="hidden space-y-4">
             <div class="bg-white p-5 rounded-2xl shadow-sm space-y-4">
                 <div class="grid grid-cols-2 gap-2">
                     <button type="button" id="fluxo_despesa" onclick="setFluxo('Despesa')" class="py-2.5 rounded-xl font-bold text-xs bg-red-500 text-white">Despesa</button>
@@ -120,7 +136,7 @@
                         <input type="date" id="dataFatura" class="p-3 border rounded-xl text-xs">
                     </div>
 
-                    <button type="submit" id="btnSalvar" class="w-full bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-sm">Salvar</button>
+                    <button type="submit" id="btnSalvar" class="w-full bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-sm">Salvar Lançamento</button>
                 </form>
             </div>
         </section>
@@ -139,49 +155,6 @@
                 <div id="listaSaldosContas" class="space-y-2 divide-y divide-gray-100">
                     <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando saldos...</p>
                 </div>
-            </div>
-        </section>
-
-        <section id="pagDashboard" class="hidden space-y-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm text-center space-y-6">
-                <div>
-                    <p id="dashMes" class="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando...</p>
-                    <h2 class="text-3xl font-black text-gray-800">Fechamento</h2>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                        <p class="text-[10px] font-bold text-emerald-800 uppercase">Receita</p>
-                        <p id="dashReceita" class="text-lg font-bold text-emerald-600">R$ 0,00</p>
-                    </div>
-                    <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
-                        <p class="text-[10px] font-bold text-red-800 uppercase">Gastos</p>
-                        <p id="dashGastos" class="text-lg font-bold text-red-600">R$ 0,00</p>
-                    </div>
-                </div>
-                <div class="p-5 bg-purple-900 rounded-3xl text-white relative overflow-hidden">
-                    <div class="relative z-10">
-                        <p class="text-xs font-bold opacity-70 uppercase mb-1">Taxa de Investimento</p>
-                        <p id="dashTaxa" class="text-4xl font-black">0%</p>
-                    </div>
-                </div>
-
-                <div class="text-left space-y-2 border-t pt-4">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Evolução de Aportes</h4>
-                    <div id="historicoTaxasLinhas" class="space-y-1.5 text-xs font-bold"></div>
-                </div>
-
-                <div class="text-left space-y-3">
-                    <h3 class="text-sm font-bold text-gray-800 flex items-center space-x-2">
-                        <span class="material-icons text-purple-600 text-lg">psychology</span><span>Motor de Insights</span>
-                    </h3>
-                    <div id="containerInsights" class="space-y-2">
-                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar os dados vivos.</p>
-                    </div>
-                </div>
-                
-                <button onclick="puxarDashboardReal()" id="btnRecarregarDash" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold py-3 text-xs border border-purple-200 rounded-xl transition active:scale-98">
-                    ATUALIZAR DADOS DO SHEETS
-                </button>
             </div>
         </section>
 
@@ -224,6 +197,38 @@
 
     </main>
 
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center px-4 py-2 relative h-16">
+            
+            <button onclick="selecionarMenu('pagContas', 'Minhas Contas')" id="nav_pagContas" class="flex flex-col items-center justify-center w-12 text-gray-400 transition">
+                <span class="material-icons text-xl">account_balance_wallet</span>
+                <span class="text-[9px] font-bold mt-0.5">Contas</span>
+            </button>
+            
+            <button onclick="selecionarMenu('pagExtrato', 'Histórico Recente')" id="nav_pagExtrato" class="flex flex-col items-center justify-center w-12 text-gray-400 pr-4 transition">
+                <span class="material-icons text-xl">history</span>
+                <span class="text-[9px] font-bold mt-0.5">Extrato</span>
+            </button>
+
+            <div class="absolute left-1/2 -translate-x-1/2 -top-5">
+                <button onclick="selecionarMenu('pagLancamento', 'Novo Lançamento')" id="nav_pagLancamento" class="w-14 h-14 bg-purple-700 hover:bg-purple-800 text-white rounded-full flex items-center justify-center shadow-lg border-4 border-gray-100 active:scale-90 transition">
+                    <span class="material-icons text-3xl font-bold">add</span>
+                </button>
+            </div>
+
+            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="nav_pagDashboard" class="flex flex-col items-center justify-center w-12 text-purple-700 pl-4 transition">
+                <span class="material-icons text-xl">auto_awesome</span>
+                <span class="text-[9px] font-bold mt-0.5">Insights</span>
+            </button>
+
+            <button onclick="selecionarMenu('pagOrcamento', 'Metas vs Realizado')" id="nav_pagOrcamento" class="flex flex-col items-center justify-center w-12 text-gray-400 transition">
+                <span class="material-icons text-xl">track_changes</span>
+                <span class="text-[9px] font-bold mt-0.5">Metas</span>
+            </button>
+
+        </div>
+    </div>
+
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6gmdfsXQOk0ioXayZiEVUYsqEbUaII7ljAWcHOHAKXST6worW6no6YIlF7oykIT0fNA/exec";
 
@@ -239,7 +244,6 @@
         let orcamentos = JSON.parse(localStorage.getItem('orc_ianne_v2')) || {};
         let historicoTaxasLocal = JSON.parse(localStorage.getItem('hist_taxas_ianne')) || {};
         let fluxoAtual = 'Despesa';
-        let menuAberto = false;
         let isParcelado = false;
         let isRecorrente = false;
 
@@ -436,17 +440,27 @@
             document.getElementById('saldoGeralTotal').textContent = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
         }
 
-        function toggleMenu() {
-            const menu = document.getElementById('menuLateral'); const overlay = document.getElementById('menuOverlay');
-            menuAberto = !menuAberto; menu.style.transform = menuAberto ? 'translateX(0)' : 'translateX(-100%)';
-            overlay.classList.toggle('opacity-50', menuAberto); overlay.classList.toggle('pointer-events-none', !menuAberto);
-        }
-
         function selecionarMenu(id, titulo) {
-            if(menuAberto) toggleMenu();
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             document.getElementById('tituloPagina').textContent = titulo;
+            
+            // Gerenciamento de cores ativas na barra inferior
+            document.querySelectorAll('div.fixed button').forEach(b => {
+                b.classList.remove('text-purple-700');
+                b.classList.add('text-gray-400');
+            });
+            
+            const botaoAtivo = document.getElementById('nav_' + id);
+            if(botaoAtivo) {
+                if(id === 'pagLancamento') {
+                    // Botão central "+" mantém seu destaque roxo nativo de fundo
+                } else {
+                    botaoAtivo.classList.remove('text-gray-400');
+                    botaoAtivo.classList.add('text-purple-700');
+                }
+            }
+
             if(id === 'pagExtrato') puxarExtratoReal();
             if(id === 'pagDashboard') puxarDashboardReal();
             if(id === 'pagOrcamento') renderTelaOrcamentos();
@@ -634,6 +648,7 @@
         }
         window.posExcluir = function(r) { if(r.result === "success") { sincronizarConfiguracoesPlanilha(); puxarExtratoReal(); } }
 
+        // Mapeamentos de fluxos de lançamentos permanecem intactos de acordo com a v6.5 homologada
         function setFluxo(t) {
             fluxoAtual = t; isParcelado = false; isRecorrente = false;
             document.getElementById('wrapperNumeroParcelas').classList.add('hidden');
@@ -798,10 +813,14 @@
             });
         }
 
+        // EXECUÇÃO INICIAL DO ECOSSISTEMA
         const hoje = new Date().toISOString().split('T')[0];
         document.getElementById('dataGasto').value = hoje;
         initMonths();
         sincronizarConfiguracoesPlanilha();
+        
+        // Ativa a aba "Insights" como padrão no arranque do app
+        setTimeout(() => { selecionarMenu('pagDashboard', 'Fechamento & Insights'); }, 300);
         
         if(navigator.onLine) { processarFilaOffline(); }
     </script>
