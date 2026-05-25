@@ -527,7 +527,7 @@
                 }
             });
             
-            // --- CORREÇÃO DO ERRO DE DIGITAÇÃO AQUI (totalConsolidado) ---
+            // --- 🛠️ CORREÇÃO DEFINITIVA DO ERRO DE VARIÁVEL AQUI ---
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if(document.getElementById('widgetSaldoTotal')) {
@@ -611,7 +611,7 @@
 
                 const container = document.getElementById('containerInsights'); container.innerHTML = '';
                 if(pctInv >= 20) {
-                    criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a quality of life!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
+                    criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
                 } else if (pctInv > 0 && pctInv < 20) {
                     criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 } else {
