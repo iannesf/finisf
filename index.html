@@ -22,8 +22,8 @@
                 <span class="material-icons text-purple-300">insights</span>
                 <span id="tituloPagina" class="text-lg font-bold">Insights do Mês</span>
             </div>
-            <div class="flex items-center space-x-2">
-                <span id="contadorFila" class="hidden text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full font-bold">0</span>
+            <div class="flex items-center space-x-2 relative">
+                <span id="contadorFila" class="hidden absolute -left-5 -top-2 text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full font-bold shadow">0</span>
                 <span id="statusApp" class="text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold animate-pulse">SYNC</span>
             </div>
         </div>
@@ -280,7 +280,7 @@
         let saldosVivosContas = {};
         let listaExtratoGlobal = []; 
         let ultimoFiltroFluxo = 'TODOS';
-        let gastosAgrupadosMesMacro = {}; 
+        let gastos AgrupadosMesMacro = {}; 
         let limiteLinhasExibidas = 20;
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -303,44 +303,78 @@
             checarAlertaOrcamento();
         }
 
+        // ==========================================
+        // 🛠️ MOTOR DE RESILIÊNCIA DA FILA OFFLINE
+        // ==========================================
         function obterFila() { return JSON.parse(localStorage.getItem('fila_financeiro_ianne')) || []; }
         function salvarFila(fila) { 
             localStorage.setItem('fila_financeiro_ianne', JSON.stringify(fila)); 
             const contador = document.getElementById('contadorFila');
-            if(fila.length > 0) {
-                contador.textContent = fila.length;
-                contador.classList.remove('hidden');
-            } else {
-                contador.classList.add('hidden');
+            if(contador) {
+                if(fila.length > 0) {
+                    contador.textContent = fila.length;
+                    contador.classList.remove('hidden');
+                } else {
+                    contador.classList.add('hidden');
+                }
             }
         }
 
+        let processandoFilaAtiva = false;
         function processarFilaOffline() {
-            if (!navigator.onLine) return;
+            if (!navigator.onLine || processandoFilaAtiva) return;
             let fila = obterFila();
             if (fila.length === 0) return;
 
+            processandoFilaAtiva = true;
             const item = fila[0];
+            
+            // Forçamos a ação correta e injetamos as credenciais necessárias
+            item.acao = "salvar";
+            item.pin = meuPin;
+            
             const p = new URLSearchParams(item);
             
-            fetch(WEB_APP_URL + "?" + p.toString(), { mode: 'no-cors' })
-            .then(() => {
-                fila.shift();
-                salvarFila(fila);
-                processarFilaOffline();
-            }).catch(e => console.log("Rede instável...", e));
+            // Usando injeção dinâmica de Script (JSONP) para limpar a fila mantendo a consistência cruzada
+            const script = document.createElement('script');
+            script.src = WEB_APP_URL + "?" + p.toString() + "&callback=window.posProcessarFilaElemento&t=" + Date.now();
+            document.body.appendChild(script);
         }
 
+        window.posProcessarFilaElemento = function(r) {
+            processandoFilaAtiva = false;
+            if(r && r.result === "success") {
+                let fila = obterFila();
+                fila.shift(); // Remove o primeiro elemento enviado com sucesso
+                salvarFila(fila);
+                
+                // Dispara o próximo da fila ou atualiza as configurações caso tenha esvaziado
+                if (fila.length > 0) {
+                    setTimeout(processarFilaOffline, 300);
+                } else {
+                    sincronizarConfiguracoesPlanilha();
+                }
+            } else {
+                console.log("Falha temporária ao descarregar da fila. Retentando em breve...");
+            }
+        };
+
         window.addEventListener('online', () => {
-            document.getElementById('statusApp').textContent = "SYNC";
-            document.getElementById('statusApp').className = "text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse";
+            const status = document.getElementById('statusApp');
+            if (status) {
+                status.textContent = "SYNC";
+                status.className = "text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse";
+            }
             processarFilaOffline();
-            sincronizarConfiguracoesPlanilha();
         });
         window.addEventListener('offline', () => {
-            document.getElementById('statusApp').textContent = "OFFLINE";
-            document.getElementById('statusApp').className = "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+            const status = document.getElementById('statusApp');
+            if (status) {
+                status.textContent = "OFFLINE";
+                status.className = "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+            }
         });
+        // ==========================================
 
         function sincronizarConfiguracoesPlanilha() {
             if(!navigator.onLine) {
@@ -375,7 +409,7 @@
                 }
                 
                 dadosCategorias = {};
-                orcamentosBase = {}; // --- 🛠️ RESET GLOBAL SEGURO DAS METAS ---
+                orcamentosBase = {};
                 
                 if(r.categorias && r.categorias.length > 0) {
                     r.categorias.forEach(cat => {
@@ -537,7 +571,7 @@
                 }
             });
             
-            const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const saldoFormatado = "R$ " + totalConsolidated.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             const sGeralEl = document.getElementById('saldoGeralTotal');
             if (sGeralEl) sGeralEl.textContent = saldoFormatado;
             
@@ -751,14 +785,18 @@
             paginados.forEach(i => {
                 const div = document.createElement('div'); div.className = "py-3 flex justify-between items-center";
                 let cor = i.tipo === 'Receita' ? 'text-emerald-600' : 'text-red-600';
+                
+                // Injeta marcador visual discreto caso o item esteja aguardando upload na fila offline
+                let tagAguardando = i.offline ? ` <span class="text-[9px] bg-amber-500 text-white font-black px-1 rounded uppercase tracking-wide">Fila</span>` : '';
+
                 div.innerHTML = `
                     <div class="max-w-[70%]">
-                        <p class="text-xs font-bold text-gray-800">${i.descricao}</p>
+                        <p class="text-xs font-bold text-gray-800">${i.descricao}${tagAguardando}</p>
                         <p class="text-[9px] text-gray-400">${i.dataGasto} · <span class="bg-gray-100 px-1 py-0.5 rounded font-bold text-purple-800">${i.conta}</span> · <span class="text-gray-500 italic">${i.macro}</span></p>
                     </div>
                     <div class="flex items-center space-x-3">
                         <p class="text-xs font-bold ${cor}">R$ ${parseFloat(i.valor).toFixed(2)}</p>
-                        <button type="button" onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg">delete</button>
+                        <button type="button" onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg" ${i.offline ? 'disabled style="opacity:0.2"' : ''}>delete</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -883,6 +921,9 @@
             } else { s.disabled = true; s.className = "p-3 border rounded-xl text-xs bg-gray-50"; }
         }
 
+        // ==========================================
+        // 🔄 ENVIO INTELIGENTE COM BALANCEAMENTO DE REDE
+        // ==========================================
         document.getElementById('financeForm').onsubmit = function(e) {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
@@ -903,17 +944,47 @@
                 recorrente: isRecorrente ? "true" : "false"
             };
 
+            // SE ESTIVER OFFLINE: Retemos localmente, atualizamos o caixa fantasma na hora e limpamos a tela
             if (!navigator.onLine) {
                 let fila = obterFila();
-                fila.push({ ...paramsObjeto, acao: 'salvar', pin: meuPin });
+                fila.push(paramsObjeto);
                 salvarFila(fila);
                 
+                // MUTAÇÃO FANTASMA DO CAIXA LOCAL (Reflete no saldo e extrato instantaneamente)
+                let valNumerico = parseFloat(paramsObjeto.valor) || 0;
+                if(saldosVivosContas[paramsObjeto.conta] !== undefined) {
+                    if(paramsObjeto.tipo === 'Receita') saldosVivosContas[paramsObjeto.conta] += valNumerico;
+                    else saldosVivosContas[paramsObjeto.conta] -= valNumerico;
+                    localStorage.setItem('cache_saldos', JSON.stringify(saldosVivosContas));
+                }
+                
+                // Formata a data americana do HTML para o padrão brasileiro do Extrato
+                let ptData = paramsObjeto.dataGasto.split('-').reverse().join('/');
+                listaExtratoGlobal.unshift({
+                    id: Date.now(),
+                    tipo: paramsObjeto.tipo,
+                    dataGasto: ptData,
+                    descricao: paramsObjeto.descricao,
+                    valor: paramsObjeto.valor,
+                    macro: paramsObjeto.macro,
+                    conta: paramsObjeto.conta,
+                    offline: true // Ativa o badge "Fila"
+                });
+                localStorage.setItem('cache_extrato', JSON.stringify(listaExtratoGlobal));
+
                 comitarMemoriaLocal(paramsObjeto.descricao);
-                alert("App em Modo Offline: Lançamento guardado no celular e será sincronizado assim que houver sinal!");
-                location.reload();
+                alert("Modo Sem Sinal: Lançamento guardado na fila do celular e computado nos seus saldos locais. Sincronização automática em background ativa!");
+                
+                // Reseta os inputs limpando a tela sem forçar reload de página e quebrar o estado off
+                document.getElementById('financeForm').reset();
+                document.getElementById('valorFalsoInput').value = '';
+                document.getElementById('valorInput').value = '';
+                if(btn) { btn.disabled = false; btn.textContent = "Salvar Lançamento"; }
+                setFluxo(fluxoAtual);
                 return;
             }
 
+            // SE ESTIVER ONLINE: Envio padrão imediato
             const p = new URLSearchParams({ callback: 'posSalvar', pin: meuPin, ...paramsObjeto });
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?" + p.toString();
             document.body.appendChild(script);
@@ -986,7 +1057,12 @@
         initMonths();
         sincronizarConfiguracoesPlanilha();
         
-        setTimeout(() => { selecionarMenu('pagDashboard', 'Fechamento & Insights'); }, 300);
+        setTimeout(() => { 
+            // Atualiza o contador de pendências logo no arranque do app
+            let filaInicial = obterFila();
+            salvarFila(filaInicial);
+            selecionarMenu('pagDashboard', 'Fechamento & Insights'); 
+        }, 300);
         
         if(navigator.onLine) { processarFilaOffline(); }
     </script>
