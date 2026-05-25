@@ -32,15 +32,15 @@
     <main class="max-w-md mx-auto p-4">
 
         <section id="pagDashboard" class="space-y-4">
-            <div class="bg-gradient-to-br from-purple-900 to-purple-950 text-white p-4 rounded-2xl shadow-sm flex justify-between items-center">
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-wider opacity-60">Saldo Vivo Geral</p>
-                    <h3 id="widgetSaldoTotal" class="text-xl font-black mt-0.5">R$ 0,00</h3>
+            <div id="carrosselSaldos" class="flex space-x-3 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+                <div class="min-w-[85%] bg-gradient-to-br from-purple-900 to-purple-950 text-white p-4 rounded-2xl shadow-sm flex justify-between items-center snap-center">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase tracking-wider opacity-60">Saldo Vivo Geral</p>
+                        <h3 id="widgetSaldoTotal" class="text-xl font-black mt-0.5">R$ 0,00</h3>
+                    </div>
+                    <span class="material-icons opacity-40 text-2xl">account_balance_wallet</span>
                 </div>
-                <button onclick="selecionarMenu('pagContas', 'Minhas Contas')" class="flex items-center space-x-1 text-[11px] bg-purple-800 bg-opacity-50 hover:bg-opacity-80 px-2.5 py-1.5 rounded-xl font-bold transition border border-purple-700">
-                    <span>Ver Contas</span><span class="material-icons text-xs">arrow_forward</span>
-                </button>
-            </div>
+                </div>
 
             <div class="bg-white p-6 rounded-2xl shadow-sm text-center space-y-6">
                 <div>
@@ -445,7 +445,23 @@
 
         function renderTelaSaldos() {
             const container = document.getElementById('listaSaldosContas'); if(!container) return;
-            container.innerHTML = ''; let totalConsolidado = 0;
+            container.innerHTML = ''; 
+            
+            // Limpa o carrossel inicial mantendo apenas o card fixo do Saldo Geral
+            const carrossel = document.getElementById('carrosselSaldos');
+            if(carrossel) {
+                carrossel.innerHTML = `
+                    <div class="min-w-[85%] bg-gradient-to-br from-purple-900 to-purple-950 text-white p-4 rounded-2xl shadow-sm flex justify-between items-center snap-center">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider opacity-60">Saldo Vivo Geral</p>
+                            <h3 id="widgetSaldoTotal" class="text-xl font-black mt-0.5">R$ 0,00</h3>
+                        </div>
+                        <span class="material-icons opacity-40 text-2xl">account_balance_wallet</span>
+                    </div>
+                `;
+            }
+
+            let totalConsolidado = 0;
 
             bancoContas.forEach(c => {
                 const saldoVal = saldosVivosContas[c.nome] || 0;
@@ -469,11 +485,26 @@
                 if(c.tipo === "Dinheiro" || c.tipo === "Carteira") icone = "payments";
                 if(c.tipo === "Cartão de Crédito") icone = "credit_card";
 
+                // Renderiza na aba Contas tradicional
                 div.innerHTML = `<div class="flex items-center space-x-3"><span class="material-icons text-gray-400 text-xl">${icone}</span><div><p class="text-xs font-bold text-gray-800 leading-tight">${c.nome}</p><p class="text-[9px] text-gray-400 font-medium">${c.banco || c.tipo}</p></div></div><p class="text-xs ${corTextoSaldo}">${formatador}</p>`;
                 container.appendChild(div);
+
+                // --- NOVIDADE: INJETA O BANCO NO CARROSSEL DA TELA INICIAL ---
+                if(carrossel) {
+                    const cardBanco = document.createElement('div');
+                    cardBanco.className = "min-w-[70%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center snap-center";
+                    cardBanco.innerHTML = `
+                        <div>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">${c.nome}</p>
+                            <h4 class="text-sm font-black mt-0.5 ${corTextoSaldo}">${formatador}</h4>
+                        </div>
+                        <span class="material-icons text-gray-300 text-xl">${icone}</span>
+                    `;
+                    carrossel.appendChild(cardBanco);
+                }
             });
             
-            // Atualiza o saldo tanto na tela de contas quanto no widget rápido inicial
+            // Atualiza os saldos nos locais correspondentes
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if(document.getElementById('widgetSaldoTotal')) {
@@ -767,7 +798,7 @@
             btn.disabled = true; btn.textContent = "GRAVANDO...";
             
             const paramsObjeto = {
-                tipo: flujoAtual, 
+                tipo: fluxoAtual, 
                 valor: document.getElementById('valorInput').value,
                 descricao: document.getElementById('descricaoInput').value,
                 macro: fluxoAtual === 'Transferência' ? 'TRANSFERÊNCIA' : document.getElementById('macroCat').value,
