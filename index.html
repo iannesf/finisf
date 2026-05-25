@@ -232,7 +232,7 @@
         let orcamentosBase = {};
         let saldosVivosContas = {};
         let listaExtratoGlobal = []; 
-        let ultimoFiltroFluxo = 'TODOS'; // Declarado no escopo global para o filtro funcionar de primeira
+        let ultimoFiltroFluxo = 'TODOS';
         let gastosAgrupadosMesMacro = {}; 
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -349,7 +349,7 @@
 
                 const status = document.getElementById('statusApp');
                 status.textContent = navigator.onLine ? "ON" : "OFFLINE";
-                status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0" : "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
 
                 renderTelaSaldos();
                 setFluxo(fluxoAtual);
@@ -410,7 +410,7 @@
 
             bancoContas.forEach(c => {
                 const saldoVal = saldosVivosContas[c.nome] || 0;
-                if(c.tipo !== 'Cartão de Crédito') { totalConsolidado += saldoVal; } // Correção de sintaxe aplicada aqui
+                if(c.tipo !== 'Cartão de Crédito') { totalConsolidado += saldoVal; }
 
                 const div = document.createElement('div'); div.className = "py-3.5 flex justify-between items-center first:pt-1";
                 let formatador = saldoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -527,16 +527,16 @@
             chaves.forEach(mes => {
                 const taxa = historicoTaxasLocal[mes] || 0;
                 const pctLimitada = Math.max(0, Math.min(100, taxa));
-                let corBarra = "bg-purple-600";
-                if(taxa >= 20) corBarra = "bg-emerald-500";
-                if(taxa <= 0) corBarra = "bg-red-500";
+                let colBarra = "bg-purple-600";
+                if(taxa >= 20) colBarra = "bg-emerald-500";
+                if(taxa <= 0) colBarra = "bg-red-500";
 
                 const div = document.createElement('div');
                 div.className = "flex items-center space-x-2";
                 div.innerHTML = `
                     <span class="w-16 text-gray-500 text-[10px] truncate">${mes.split(' / ')[0]}</span>
                     <div class="flex-1 bg-gray-100 rounded-full h-2 relative">
-                        <div class="h-2 rounded-full ${corBarra}" style="width: ${pctLimitada}%"></div>
+                        <div class="h-2 rounded-full ${colBarra}" style="width: ${pctLimitada}%"></div>
                     </div>
                     <span class="w-10 text-right text-[10px] text-gray-700">${taxa.toFixed(0)}%</span>
                 `;
