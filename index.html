@@ -375,6 +375,8 @@
                 }
                 
                 dadosCategorias = {};
+                orcamentosBase = {}; // --- 🛠️ RESET GLOBAL SEGURO DAS METAS ---
+                
                 if(r.categorias && r.categorias.length > 0) {
                     r.categorias.forEach(cat => {
                         const macro = cat.Macro; const micro = cat.Micro;
@@ -392,29 +394,35 @@
                 }
 
                 const selectMacro = document.getElementById('macroCat');
-                selectMacro.innerHTML = '<option value="">Macro</option>';
-                Object.keys(dadosCategorias).forEach(m => {
-                    const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
-                    selectMacro.appendChild(opt);
-                });
+                if (selectMacro) {
+                    selectMacro.innerHTML = '<option value="">Macro</option>';
+                    Object.keys(dadosCategorias).forEach(m => {
+                        const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+                        selectMacro.appendChild(opt);
+                    });
+                }
 
                 const sFiltroExt = document.getElementById('filtroContaExtrato');
-                sFiltroExt.innerHTML = '<option value="TODAS">Todas as Contas</option>';
-                bancoContas.forEach(c => {
-                    sFiltroExt.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
-                });
+                if (sFiltroExt) {
+                    sFiltroExt.innerHTML = '<option value="TODAS">Todas as Contas</option>';
+                    bancoContas.forEach(c => {
+                        sFiltroExt.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
+                    });
+                }
 
                 const sFiltroMacroExt = document.getElementById('filtroMacroExtrato');
                 if(sFiltroMacroExt) {
                     sFiltroMacroExt.innerHTML = '<option value="TODAS">Todas as Macros</option>';
                     Object.keys(dadosCategorias).forEach(m => {
-                        sFiltroMacroExt.innerHTML += `<option value="${m}">${m}</option>';
+                        sFiltroMacroExt.innerHTML += `<option value="${m}">${m}</option>`;
                     });
                 }
 
                 const status = document.getElementById('statusApp');
-                status.textContent = navigator.onLine ? "ON" : "OFFLINE";
-                status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0" : "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                if (status) {
+                    status.textContent = navigator.onLine ? "ON" : "OFFLINE";
+                    status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0" : "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                }
 
                 renderTelaSaldos();
                 setFluxo(fluxoAtual);
@@ -441,7 +449,7 @@
             const dataG = document.getElementById('dataGasto').value;
             const alerta = document.getElementById('alertaOrcamentoGasto');
             
-            if(!macro || valor <= 0 || !dataG) { alerta.classList.add('hidden'); return; }
+            if(!macro || valor <= 0 || !dataG) { if(alerta) alerta.classList.add('hidden'); return; }
             
             const txtMes = getMesAnoString(dataG);
             if(!orcamentos[txtMes]) orcamentos[txtMes] = { ...orcamentosBase };
@@ -450,15 +458,17 @@
             const gastoAtual = gastosAgrupadosMesMacro[txtMes] && gastosAgrupadosMesMacro[txtMes][macro] ? gastosAgrupadosMesMacro[txtMes][macro] : 0;
             const restante = planejado - gastoAtual;
 
-            if(planejado === 0) { alerta.classList.add('hidden'); return; }
+            if(planejado === 0) { if(alerta) alerta.classList.add('hidden'); return; }
 
-            alerta.classList.remove('hidden');
-            if(valor > restante) {
-                alerta.className = "text-[10px] p-2 rounded-lg font-bold bg-red-100 text-red-800 border border-red-200 animate-bounce";
-                alerta.textContent = `Aviso: Lançamento estoura a meta de ${macro}! (Restante: R$ ${restante.toFixed(2)})`;
-            } else {
-                alerta.className = "text-[10px] p-2 rounded-lg font-bold bg-purple-50 text-purple-800 border border-purple-100";
-                alerta.textContent = `Meta sob controle. Ficará R$ ${(restante - valor).toFixed(2)} disponível em ${macro}.`;
+            if(alerta) {
+                alerta.classList.remove('hidden');
+                if(valor > restante) {
+                    alerta.className = "text-[10px] p-2 rounded-lg font-bold bg-red-100 text-red-800 border border-red-200 animate-bounce";
+                    alerta.textContent = `Aviso: Lançamento estoura a meta de ${macro}! (Restante: R$ ${restante.toFixed(2)})`;
+                } else {
+                    alerta.className = "text-[10px] p-2 rounded-lg font-bold bg-purple-50 text-purple-800 border border-purple-100";
+                    alerta.textContent = `Meta sob controle. Ficará R$ ${(restante - valor).toFixed(2)} disponível em ${macro}.`;
+                }
             }
         }
 
@@ -527,12 +537,12 @@
                 }
             });
             
-            // --- 🛠️ CORREÇÃO DEFINITIVA DO ERRO DE VARIÁVEL AQUI ---
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-            document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
-            if(document.getElementById('widgetSaldoTotal')) {
-                document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
-            }
+            const sGeralEl = document.getElementById('saldoGeralTotal');
+            if (sGeralEl) sGeralEl.textContent = saldoFormatado;
+            
+            const wSaldoEl = document.getElementById('widgetSaldoTotal');
+            if (wSaldoEl) wSaldoEl.textContent = saldoFormatado;
         }
 
         function selecionarMenu(id, titulo) {
@@ -584,7 +594,7 @@
 
         function puxarDashboardReal() {
             if (!navigator.onLine) { renderDash({ result: "offline" }); return; }
-            const btn = document.getElementById('btnRecarregarDash'); btn.disabled = true; btn.textContent = "CONECTANDO AO GOOGLE...";
+            const btn = document.getElementById('btnRecarregarDash'); if (btn) { btn.disabled = true; btn.textContent = "CONECTANDO AO GOOGLE..."; }
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=renderDash&acao=puxarDashboard&pin=" + meuPin + "&t=" + Date.now();
             document.body.appendChild(script);
         }
@@ -593,7 +603,7 @@
             if(r.result === "error" && r.message.includes("PIN")) { location.reload(); return; }
 
             const btn = document.getElementById('btnRecarregarDash');
-            btn.disabled = false; btn.textContent = "ATUALIZAR DADOS DO SHEETS";
+            if (btn) { btn.disabled = false; btn.textContent = "ATUALIZAR DADOS DO SHEETS"; }
             
             if(r.result === "success") {
                 const d = r.dados;
@@ -714,9 +724,11 @@
             document.querySelectorAll('#pagExtrato button[id^="f_btn_"]').forEach(b => {
                 b.className = "px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border";
             });
-            document.getElementById('f_btn_' + tipoFluxo).className = "px-3 py-1.5 rounded-full bg-purple-800 text-white shadow-sm";
+            const btnF = document.getElementById('f_btn_' + tipoFluxo);
+            if (btnF) btnF.className = "px-3 py-1.5 rounded-full bg-purple-800 text-white shadow-sm";
 
             const container = document.getElementById('containerExtrato');
+            if (!container) return;
             container.innerHTML = '';
 
             const filtrados = listaExtratoGlobal.filter(i => {
@@ -729,7 +741,8 @@
 
             if(filtrados.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-gray-400 p-4">Nenhum lançamento filtrado.</p>';
-                document.getElementById('btnCarregarMaisExtrato').classList.add('hidden');
+                const bMais = document.getElementById('btnCarregarMaisExtrato');
+                if (bMais) bMais.classList.add('hidden');
                 return;
             }
 
@@ -752,10 +765,12 @@
             });
 
             const btnMais = document.getElementById('btnCarregarMaisExtrato');
-            if(filtrados.length > limiteLinhasExibidas) {
-                btnMais.classList.remove('hidden');
-            } else {
-                btnMais.classList.add('hidden');
+            if(btnMais) {
+                if(filtrados.length > limiteLinhasExibidas) {
+                    btnMais.classList.remove('hidden');
+                } else {
+                    btnMais.classList.add('hidden');
+                }
             }
         }
 
@@ -772,36 +787,62 @@
 
         function setFluxo(t) {
             fluxoAtual = t; isParcelado = false; isRecorrente = false;
-            document.getElementById('wrapperNumeroParcelas').classList.add('hidden');
-            document.getElementById('previewParcelamento').classList.add('hidden');
+            
+            const wParcelas = document.getElementById('wrapperNumeroParcelas');
+            if (wParcelas) wParcelas.classList.add('hidden');
+            
+            const pParcelamento = document.getElementById('previewParcelamento');
+            if (pParcelamento) pParcelamento.classList.add('hidden');
+            
             document.querySelectorAll('#pagLancamento button').forEach(b => b.className = "py-2.5 rounded-xl font-bold text-xs bg-gray-100 text-gray-600 border");
             
             const map = { 'Despesa': 'fluxo_despesa', 'Receita': 'fluxo_receita', 'Cartão': 'fluxo_cartao', 'Transferência': 'fluxo_transferencia' };
             const cor = { 'Despesa': 'bg-red-500', 'Receita': 'bg-emerald-500', 'Cartão': 'bg-purple-600', 'Transferência': 'bg-blue-500' };
             
             if(document.getElementById(map[t])) document.getElementById(map[t]).className = `py-2.5 rounded-xl font-bold text-xs ${cor[t]} text-white`;
-            document.getElementById('btnParcelado').classList.toggle('hidden', t !== 'Cartão');
-            document.getElementById('btnRecorrente').classList.toggle('hidden', t === 'Cartão' || t === 'Transferência');
-            document.getElementById('btnParcelado').className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
-            document.getElementById('btnRecorrente').className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
-            document.getElementById('blocoCategorias').classList.toggle('hidden', t === 'Transferência');
-            document.getElementById('blocoContaDestino').classList.toggle('hidden', t !== 'Transferência');
-            document.getElementById('alertaOrcamentoGasto').classList.add('hidden');
+            
+            const bParcelado = document.getElementById('btnParcelado');
+            if (bParcelado) {
+                bParcelado.classList.toggle('hidden', t !== 'Cartão');
+                bParcelado.className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+            }
+            
+            const bRecorrente = document.getElementById('btnRecorrente');
+            if (bRecorrente) {
+                bRecorrente.classList.toggle('hidden', t === 'Cartão' || t === 'Transferência');
+                bRecorrente.className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+            }
+            
+            const bCategorias = document.getElementById('blocoCategorias');
+            if (bCategorias) bCategorias.classList.toggle('hidden', t === 'Transferência');
+            
+            const bContaDestino = document.getElementById('blocoContaDestino');
+            if (bContaDestino) bContaDestino.classList.toggle('hidden', t !== 'Transferência');
+            
+            const alertOrc = document.getElementById('alertaOrcamentoGasto');
+            if (alertOrc) alertOrc.classList.add('hidden');
 
-            const selectOrigem = document.getElementById('contaOrigem'); selectOrigem.innerHTML = '';
-            bancoContas.forEach(c => {
-                if(t === 'Cartão' && c.tipo !== 'Cartão de Crédito') return;
-                if(t !== 'Cartão' && c.tipo === 'Cartão de Crédito') return;
-                const opt = document.createElement('option'); opt.value = c.nome; opt.textContent = c.nome;
-                selectOrigem.appendChild(opt);
-            });
-            if(t === 'Transferência') {
-                const selectDestino = document.getElementById('contaDestino'); selectDestino.innerHTML = '';
+            const selectOrigem = document.getElementById('contaOrigem'); 
+            if (selectOrigem) {
+                selectOrigem.innerHTML = '';
                 bancoContas.forEach(c => {
-                    if(c.tipo === 'Cartão de Crédito') return;
+                    if(t === 'Cartão' && c.tipo !== 'Cartão de Crédito') return;
+                    if(t !== 'Cartão' && c.tipo === 'Cartão de Crédito') return;
                     const opt = document.createElement('option'); opt.value = c.nome; opt.textContent = c.nome;
-                    selectDestino.appendChild(opt);
+                    selectOrigem.appendChild(opt);
                 });
+            }
+            
+            if(t === 'Transferência') {
+                const selectDestino = document.getElementById('contaDestino'); 
+                if (selectDestino) {
+                    selectDestino.innerHTML = '';
+                    bancoContas.forEach(c => {
+                        if(c.tipo === 'Cartão de Crédito') return;
+                        const opt = document.createElement('option'); opt.value = c.nome; opt.textContent = c.nome;
+                        selectDestino.appendChild(opt);
+                    });
+                }
             }
             autoAjustarVencimento();
         }
@@ -809,29 +850,33 @@
         function toggleParcelado() {
             isParcelado = !isParcelado; const btn = document.getElementById('btnParcelado'); const wrapperSelect = document.getElementById('wrapperNumeroParcelas');
             if(isParcelado) {
-                btn.className = "py-2 border border-purple-300 rounded-xl text-[10px] font-bold text-purple-800 bg-purple-50 uppercase tracking-wider";
-                wrapperSelect.classList.remove('hidden');
+                if(btn) btn.className = "py-2 border border-purple-300 rounded-xl text-[10px] font-bold text-purple-800 bg-purple-50 uppercase tracking-wider";
+                if(wrapperSelect) wrapperSelect.classList.remove('hidden');
             } else {
-                btn.className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
-                wrapperSelect.classList.add('hidden');
+                if(btn) btn.className = "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+                if(wrapperSelect) wrapperSelect.classList.add('hidden');
             }
             calcularPreviaParcela();
         }
 
         function toggleRecorrente() { 
             isRecorrente = !isRecorrente; const btn = document.getElementById('btnRecorrente');
-            btn.className = isRecorrente ? "py-2 border border-emerald-300 rounded-xl text-[10px] font-bold text-emerald-800 bg-emerald-50 uppercase tracking-wider" : "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
+            if (btn) btn.className = isRecorrente ? "py-2 border border-emerald-300 rounded-xl text-[10px] font-bold text-emerald-800 bg-emerald-50 uppercase tracking-wider" : "py-2 border rounded-xl text-[10px] font-bold text-gray-500 bg-gray-50 uppercase tracking-wider";
         }
 
         function calcularPreviaParcela() {
             const v = parseFloat(document.getElementById('valorInput').value) || 0;
             const n = parseInt(document.getElementById('numParcelas').value); const p = document.getElementById('previewParcelamento');
-            if(isParcelado && v > 0) { p.textContent = `${n}x de R$ ${(v/n).toFixed(2)}`; p.classList.remove('hidden'); }
-            else p.classList.add('hidden');
+            if(p) {
+                if(isParcelado && v > 0) { p.textContent = `${n}x de R$ ${(v/n).toFixed(2)}`; p.classList.remove('hidden'); }
+                else p.classList.add('hidden');
+            }
         }
 
         function alwaysUpdateMicros() {
-            const m = document.getElementById('macroCat').value; const s = document.getElementById('microCat'); s.innerHTML = '';
+            const m = document.getElementById('macroCat').value; const s = document.getElementById('microCat'); 
+            if (!s) return;
+            s.innerHTML = '';
             if(m && dadosCategorias[m] && dadosCategorias[m].length > 0) {
                 s.disabled = false; s.className = "p-3 border rounded-xl text-xs bg-white";
                 dadosCategorias[m].forEach(mi => { const o = document.createElement('option'); o.value = mi; o.textContent = mi; s.appendChild(o); });
@@ -841,7 +886,7 @@
         document.getElementById('financeForm').onsubmit = function(e) {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
-            btn.disabled = true; btn.textContent = "GRAVANDO...";
+            if (btn) { btn.disabled = true; btn.textContent = "GRAVANDO..."; }
             
             const paramsObjeto = {
                 tipo: fluxoAtual, 
@@ -890,7 +935,7 @@
                 comitarMemoriaLocal(document.getElementById('descricaoInput').value);
                 alert("Lançamento Realizado!"); location.reload();
             } else {
-                alert("Erro ao salvar: " + r.message); btn.disabled = false; btn.textContent = "SALVAR";
+                alert("Erro ao salvar: " + r.message); if (btn) { btn.disabled = false; btn.textContent = "SALVAR"; }
             }
         };
 
