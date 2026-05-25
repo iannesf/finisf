@@ -22,7 +22,7 @@
             <h1 id="tituloPagina" class="text-xl font-bold text-center flex-1 pr-6">Novo Lançamento</h1>
             <div class="flex items-center space-x-2 absolute right-0">
                 <span id="contadorFila" class="hidden text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full font-bold">0</span>
-                <span id="statusApp" class="text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold animate-pulse">SYNC</span>
+                <span id="statusApp" class="text-[10px] bg-amber-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0 animate-pulse">SYNC</span>
             </div>
         </div>
     </header>
@@ -507,7 +507,7 @@
                 } else if (pctInv > 0 && pctInv < 20) {
                     criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 } else {
-                    criarCaixaInsight(container, "Aviso crítico: Seus custos fixos ou variáveis superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
+                    criarCaixaInsight(container, "Aviso crítico: Seus custos fixos ou variables superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
                 }
             } else {
                 renderSparklinesTaxas();
@@ -619,7 +619,7 @@
                     </div>
                     <div class="flex items-center space-x-3">
                         <p class="text-xs font-bold ${cor}">R$ ${parseFloat(i.valor).toFixed(2)}</p>
-                        <button onclick="excluirLinha(${id})" class="material-icons text-gray-300 text-lg">delete</button>
+                        <button onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg">delete</button>
                     </div>
                 `;
                 container.appendChild(div);
