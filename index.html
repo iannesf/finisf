@@ -232,6 +232,21 @@
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6gmdfsXQOk0ioXayZiEVUYsqEbUaII7ljAWcHOHAKXST6worW6no6YIlF7oykIT0fNA/exec";
 
+        // ==========================================
+        // 🔑 CONTROLE DE AUTENTICAÇÃO LOCAL (PIN)
+        // ==========================================
+        let meuPin = localStorage.getItem('finisf_pin');
+        if (!meuPin) {
+            meuPin = prompt("Insira seu PIN de 4 dígitos para acessar o App Financeiro:");
+            if (meuPin) {
+                localStorage.setItem('finisf_pin', meuPin);
+            } else {
+                alert("Acesso recusado. Recarregue a página para tentar novamente.");
+                window.stop();
+            }
+        }
+        // ==========================================
+
         let bancoContas = [];
         let dadosCategorias = {};
         let orcamentosBase = {};
@@ -305,7 +320,7 @@
                 return;
             }
             const script = document.createElement('script');
-            script.src = WEB_APP_URL + "?callback=processarConfiguracoes&acao=puxarConfiguracoes&t=" + Date.now();
+            script.src = WEB_APP_URL + "?callback=processarConfiguracoes&acao=puxarConfiguracoes&pin=" + meuPin + "&t=" + Date.now();
             document.body.appendChild(script);
         }
 
@@ -490,7 +505,7 @@
         function puxarDashboardReal() {
             if (!navigator.onLine) { renderDash({ result: "offline" }); return; }
             const btn = document.getElementById('btnRecarregarDash'); btn.disabled = true; btn.textContent = "CONECTANDO AO GOOGLE...";
-            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=renderDash&acao=puxarDashboard&t=" + Date.now();
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=renderDash&acao=puxarDashboard&pin=" + meuPin + "&t=" + Date.now();
             document.body.appendChild(script);
         }
 
@@ -516,7 +531,7 @@
                 if(pctInv >= 20) {
                     criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
                 } else if (pctInv > 0 && pctInv < 20) {
-                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
+                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas in jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 } else {
                     criarCaixaInsight(container, "Aviso crítico: Seus custos fixos ou variáveis superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
                 }
@@ -566,7 +581,7 @@
                 return;
             }
             const container = document.getElementById('containerExtrato'); container.innerHTML = '<p class="text-center text-xs p-4 animate-pulse">Buscando na planilha...</p>';
-            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=renderExt&acao=puxarExtrato&t=" + Date.now();
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=renderExt&acao=puxarExtrato&pin=" + meuPin + "&t=" + Date.now();
             document.body.appendChild(script);
         }
 
@@ -640,7 +655,7 @@
         function excluirLinha(id) {
             if(!confirm("Deseja mesmo excluir?")) return;
             if(!navigator.onLine) { alert("Você precisa estar online para deletar registros da planilha."); return; }
-            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=posExcluir&acao=excluir&idLinha=" + id;
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=posExcluir&acao=excluir&pin=" + meuPin + "&idLinha=" + id;
             document.body.appendChild(script);
         }
         window.posExcluir = function(r) { if(r.result === "success") { sincronizarConfiguracoesPlanilha(); puxarExtratoReal(); } }
@@ -735,7 +750,7 @@
 
             if (!navigator.onLine) {
                 let fila = obterFila();
-                fila.push({ ...paramsObjeto, acao: 'salvar' });
+                fila.push({ ...paramsObjeto, acao: 'salvar', pin: meuPin });
                 salvarFila(fila);
                 
                 comitarMemoriaLocal(paramsObjeto.descricao);
@@ -744,7 +759,7 @@
                 return;
             }
 
-            const p = new URLSearchParams({ callback: 'posSalvar', ...paramsObjeto });
+            const p = new URLSearchParams({ callback: 'posSalvar', pin: meuPin, ...paramsObjeto });
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?" + p.toString();
             document.body.appendChild(script);
         };
