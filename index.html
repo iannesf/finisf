@@ -281,8 +281,6 @@
         let listaExtratoGlobal = []; 
         let ultimoFiltroFluxo = 'TODOS';
         let gastosAgrupadosMesMacro = {}; 
-        
-        // --- 🔄 PAGINAÇÃO LOCAL DO EXTRATO ---
         let limiteLinhasExibidas = 20;
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -529,6 +527,7 @@
                 }
             });
             
+            // --- CORREÇÃO DO ERRO DE DIGITAÇÃO AQUI (totalConsolidado) ---
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if(document.getElementById('widgetSaldoTotal')) {
@@ -612,7 +611,7 @@
 
                 const container = document.getElementById('containerInsights'); container.innerHTML = '';
                 if(pctInv >= 20) {
-                    criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
+                    criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a quality of life!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
                 } else if (pctInv > 0 && pctInv < 20) {
                     criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 } else {
@@ -697,13 +696,12 @@
             return `${names[mIdx]}/${partes[2]}`;
         }
 
-        // --- 🔄 FUNÇÕES DO INFITE SCROLL / PAGINAÇÃO LOCAL ---
         function resgatarLimiteEDecorar() {
-            limiteLinhasExibidas = 20; // Reseta a página inicial sempre que muda um filtro estrutural
+            limiteLinhasExibidas = 20; 
         }
 
         function incrementarPaginaExtrato() {
-            limiteLinhasExibidas += 20; // Adiciona mais 20 registos na lista
+            limiteLinhasExibidas += 20; 
             filtrarExtrato(ultimoFiltroFluxo);
         }
 
@@ -735,7 +733,6 @@
                 return;
             }
 
-            // --- CORTE E RENDEREZAÇÃO DA PAGINAÇÃO ---
             const paginados = filtrados.slice(0, limiteLinhasExibidas);
 
             paginados.forEach(i => {
@@ -754,7 +751,6 @@
                 container.appendChild(div);
             });
 
-            // Gerencia a visibilidade do botão "Carregar Mais"
             const btnMais = document.getElementById('btnCarregarMaisExtrato');
             if(filtrados.length > limiteLinhasExibidas) {
                 btnMais.classList.remove('hidden');
