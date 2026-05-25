@@ -325,6 +325,17 @@
         }
 
         window.processarConfiguracoes = function(r) {
+            // --- TRAVA COMPLETA DE PIN INCORRETO ---
+            if(r.result === "error" && r.message.includes("PIN")) {
+                localStorage.removeItem('finisf_pin'); // Apaga o PIN errado do celular
+                localStorage.removeItem('cache_contas'); // Limpa caches de segurança
+                localStorage.removeItem('cache_saldos');
+                localStorage.removeItem('cache_extrato');
+                alert("ERRO DE AUTENTICAÇÃO: Seu PIN está incorreto! A página será reiniciada.");
+                location.reload();
+                return;
+            }
+
             if(r.result === "success") {
                 if(r.contas.length > 0) {
                     bancoContas = r.contas.map(c => ({ nome: c.Nome, tipo: c.Tipo, banco: c.Banco }));
@@ -510,6 +521,9 @@
         }
 
         window.renderDash = function(r) {
+            // Se o endpoint do dash acusar erro de PIN, bloqueia também
+            if(r.result === "error" && r.message.includes("PIN")) { location.reload(); return; }
+
             const btn = document.getElementById('btnRecarregarDash');
             btn.disabled = false; btn.textContent = "ATUALIZAR DADOS DO SHEETS";
             
@@ -531,7 +545,7 @@
                 if(pctInv >= 20) {
                     criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
                 } else if (pctInv > 0 && pctInv < 20) {
-                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas in jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
+                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 } else {
                     criarCaixaInsight(container, "Aviso crítico: Seus custos fixos ou variáveis superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
                 }
@@ -586,6 +600,8 @@
         }
 
         window.renderExt = function(r) {
+            if(r.result === "error" && r.message.includes("PIN")) { location.reload(); return; }
+
             if(r.result === "success" && r.dados) {
                 listaExtratoGlobal = r.dados;
                 localStorage.setItem('cache_extrato', JSON.stringify(r.dados));
@@ -658,7 +674,10 @@
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=posExcluir&acao=excluir&pin=" + meuPin + "&idLinha=" + id;
             document.body.appendChild(script);
         }
-        window.posExcluir = function(r) { if(r.result === "success") { sincronizarConfiguracoesPlanilha(); puxarExtratoReal(); } }
+        window.posExcluir = function(r) { 
+            if(r.result === "error" && r.message.includes("PIN")) { location.reload(); return; }
+            if(r.result === "success") { sincronizarConfiguracoesPlanilha(); puxarExtratoReal(); } 
+        }
 
         function setFluxo(t) {
             fluxoAtual = t; isParcelado = false; isRecorrente = false;
@@ -773,6 +792,8 @@
         }
 
         window.posSalvar = function(r) {
+            if(r.result === "error" && r.message.includes("PIN")) { location.reload(); return; }
+
             const btn = document.getElementById('btnSalvar');
             if(r.result === "success") {
                 comitarMemoriaLocal(document.getElementById('descricaoInput').value);
