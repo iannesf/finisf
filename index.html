@@ -177,30 +177,34 @@
 
                 <div class="relative flex items-center">
                     <span class="material-icons absolute left-3 text-gray-400 text-lg">search</span>
-                    <input type="text" id="buscaExtratoTexto" oninput="filtrarExtrato(ultimoFiltroFluxo)" placeholder="Buscar por descrição (ex: Mercado)..." class="w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-medium focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50">
+                    <input type="text" id="buscaExtratoTexto" oninput="resgatarLimiteEDecorar(); filtrarExtrato(ultimoFiltroFluxo);" placeholder="Buscar por descrição (ex: Mercado)..." class="w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-medium focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50">
                 </div>
 
                 <div class="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px] font-bold">
-                    <button type="button" onclick="filtrarExtrato('TODOS')" id="f_btn_TODOS" class="px-3 py-1.5 rounded-full bg-purple-800 text-white shadow-sm">Todos</button>
-                    <button type="button" onclick="filtrarExtrato('Receita')" id="f_btn_Receita" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Receitas</button>
-                    <button type="button" onclick="filtrarExtrato('Despesa')" id="f_btn_Despesa" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Despesas</button>
-                    <button type="button" onclick="filtrarExtrato('Cartão')" id="f_btn_Cartao" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Cartões</button>
+                    <button type="button" onclick="resgatarLimiteEDecorar(); filtrarExtrato('TODOS');" id="f_btn_TODOS" class="px-3 py-1.5 rounded-full bg-purple-800 text-white shadow-sm">Todos</button>
+                    <button type="button" onclick="resgatarLimiteEDecorar(); filtrarExtrato('Receita');" id="f_btn_Receita" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Receitas</button>
+                    <button type="button" onclick="resgatarLimiteEDecorar(); filtrarExtrato('Despesa');" id="f_btn_Despesa" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Despesas</button>
+                    <button type="button" onclick="resgatarLimiteEDecorar(); filtrarExtrato('Cartão');" id="f_btn_Cartao" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Cartões</button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <select id="filtroContaExtrato" onchange="filtrarExtrato(ultimoFiltroFluxo)" class="w-full p-2 border rounded-xl text-[11px] font-bold bg-gray-50 focus:outline-none">
+                        <select id="filtroContaExtrato" onchange="resgatarLimiteEDecorar(); filtrarExtrato(ultimoFiltroFluxo);" class="w-full p-2 border rounded-xl text-[11px] font-bold bg-gray-50 focus:outline-none">
                             <option value="TODAS">Todas as Contas</option>
                         </select>
                     </div>
                     <div>
-                        <select id="filtroMacroExtrato" onchange="filtrarExtrato(ultimoFiltroFluxo)" class="w-full p-2 border rounded-xl text-[11px] font-bold bg-gray-50 focus:outline-none">
+                        <select id="filtroMacroExtrato" onchange="resgatarLimiteEDecorar(); filtrarExtrato(ultimoFiltroFluxo);" class="w-full p-2 border rounded-xl text-[11px] font-bold bg-gray-50 focus:outline-none">
                             <option value="TODAS">Todas as Macros</option>
                         </select>
                     </div>
                 </div>
 
                 <div id="containerExtrato" class="space-y-3 divide-y divide-gray-50 pt-2"></div>
+                
+                <button type="button" id="btnCarregarMaisExtrato" onclick="incrementarPaginaExtrato()" class="hidden w-full mt-2 py-3 bg-gray-50 hover:bg-gray-100 text-purple-800 border border-dashed border-purple-300 rounded-xl text-xs font-bold transition">
+                    CARREGAR MAIS LANÇAMENTOS
+                </button>
             </div>
         </section>
 
@@ -277,6 +281,9 @@
         let listaExtratoGlobal = []; 
         let ultimoFiltroFluxo = 'TODOS';
         let gastosAgrupadosMesMacro = {}; 
+        
+        // --- 🔄 PAGINAÇÃO LOCAL DO EXTRATO ---
+        let limiteLinhasExibidas = 20;
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
         let orcamentos = JSON.parse(localStorage.getItem('orc_ianne_v2')) || {};
@@ -386,7 +393,6 @@
                     orcamentosBase = JSON.parse(localStorage.getItem('cache_base_orc')) || {};
                 }
 
-                // Alimenta o formulário de inserção
                 const selectMacro = document.getElementById('macroCat');
                 selectMacro.innerHTML = '<option value="">Macro</option>';
                 Object.keys(dadosCategorias).forEach(m => {
@@ -394,19 +400,17 @@
                     selectMacro.appendChild(opt);
                 });
 
-                // Alimenta o filtro de contas do extrato
                 const sFiltroExt = document.getElementById('filtroContaExtrato');
                 sFiltroExt.innerHTML = '<option value="TODAS">Todas as Contas</option>';
                 bancoContas.forEach(c => {
                     sFiltroExt.innerHTML += `<option value="${c.nome}">${c.nome}</option>`;
                 });
 
-                // --- NOVIDADE: ALIMENTA O FILTRO DE MACRO CATEGORIAS DO EXTRATO ---
                 const sFiltroMacroExt = document.getElementById('filtroMacroExtrato');
                 if(sFiltroMacroExt) {
                     sFiltroMacroExt.innerHTML = '<option value="TODAS">Todas as Macros</option>';
                     Object.keys(dadosCategorias).forEach(m => {
-                        sFiltroMacroExt.innerHTML += `<option value="${m}">${m}</option>`;
+                        sFiltroMacroExt.innerHTML += `<option value="${m}">${m}</option>';
                     });
                 }
 
@@ -525,7 +529,7 @@
                 }
             });
             
-            const saldoFormatado = "R$ " + totalConsolidated.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if(document.getElementById('widgetSaldoTotal')) {
                 document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
@@ -550,7 +554,7 @@
                 }
             }
 
-            if(id === 'pagExtrato') puxarExtratoReal();
+            if(id === 'pagExtrato') { resgatarLimiteEDecorar(); puxarExtratoReal(); }
             if(id === 'pagDashboard') puxarDashboardReal();
             if(id === 'pagOrcamento') renderTelaOrcamentos();
             if(id === 'pagContas') renderTelaSaldos();
@@ -693,7 +697,16 @@
             return `${names[mIdx]}/${partes[2]}`;
         }
 
-        // --- 🔍 METODO DE FILTRAGEM ULTRA AVANÇADO CRUSADO ---
+        // --- 🔄 FUNÇÕES DO INFITE SCROLL / PAGINAÇÃO LOCAL ---
+        function resgatarLimiteEDecorar() {
+            limiteLinhasExibidas = 20; // Reseta a página inicial sempre que muda um filtro estrutural
+        }
+
+        function incrementarPaginaExtrato() {
+            limiteLinhasExibidas += 20; // Adiciona mais 20 registos na lista
+            filtrarExtrato(ultimoFiltroFluxo);
+        }
+
         function filtrarExtrato(tipoFluxo) {
             ultimoFiltroFluxo = tipoFluxo;
             const contaSelecionada = document.getElementById('filtroContaExtrato').value;
@@ -708,7 +721,6 @@
             const container = document.getElementById('containerExtrato');
             container.innerHTML = '';
 
-            // Cruza todos os filtros ativos de uma vez só!
             const filtrados = listaExtratoGlobal.filter(i => {
                 const matchFluxo = (tipoFluxo === 'TODOS' || i.tipo === tipoFluxo);
                 const matchConta = (contaSelecionada === 'TODAS' || i.conta === contaSelecionada);
@@ -719,10 +731,14 @@
 
             if(filtrados.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-gray-400 p-4">Nenhum lançamento filtrado.</p>';
+                document.getElementById('btnCarregarMaisExtrato').classList.add('hidden');
                 return;
             }
 
-            filtrados.forEach(i => {
+            // --- CORTE E RENDEREZAÇÃO DA PAGINAÇÃO ---
+            const paginados = filtrados.slice(0, limiteLinhasExibidas);
+
+            paginados.forEach(i => {
                 const div = document.createElement('div'); div.className = "py-3 flex justify-between items-center";
                 let cor = i.tipo === 'Receita' ? 'text-emerald-600' : 'text-red-600';
                 div.innerHTML = `
@@ -737,6 +753,14 @@
                 `;
                 container.appendChild(div);
             });
+
+            // Gerencia a visibilidade do botão "Carregar Mais"
+            const btnMais = document.getElementById('btnCarregarMaisExtrato');
+            if(filtrados.length > limiteLinhasExibidas) {
+                btnMais.classList.remove('hidden');
+            } else {
+                btnMais.classList.add('hidden');
+            }
         }
 
         function excluirLinha(id) {
