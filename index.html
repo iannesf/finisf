@@ -193,10 +193,10 @@
                 </div>
 
                 <div class="flex space-x-1.5 overflow-x-auto pb-3 scrollbar-none text-[11px] font-bold">
-                    <button onclick="filtrarExtrato('TODOS')" id="f_btn_TODOS" class="px-3 py-1.5 rounded-full bg-purple-800 text-white shadow-sm">Todos</button>
-                    <button onclick="filtrarExtrato('Receita')" id="f_btn_Receita" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Receitas</button>
-                    <button onclick="filtrarExtrato('Despesa')" id="f_btn_Despesa" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Despesas</button>
-                    <button onclick="filtrarExtrato('Cartão')" id="f_btn_Cartao" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Cartões</button>
+                    <button type="button" onclick="filtrarExtrato('TODOS')" id="f_btn_TODOS" class="px-3 py-1.5 rounded-full bg-purple-800 text-white shadow-sm">Todos</button>
+                    <button type="button" onclick="filtrarExtrato('Receita')" id="f_btn_Receita" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Receitas</button>
+                    <button type="button" onclick="filtrarExtrato('Despesa')" id="f_btn_Despesa" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Despesas</button>
+                    <button type="button" onclick="filtrarExtrato('Cartão')" id="f_btn_Cartao" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border">Cartões</button>
                 </div>
                 <div class="mb-3">
                     <select id="filtroContaExtrato" onchange="filtrarExtrato(ultimoFiltroFluxo)" class="w-full p-2 border rounded-xl text-xs font-bold bg-gray-50">
@@ -349,7 +349,7 @@
 
                 const status = document.getElementById('statusApp');
                 status.textContent = navigator.onLine ? "ON" : "OFFLINE";
-                status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0" : "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
 
                 renderTelaSaldos();
                 setFluxo(fluxoAtual);
@@ -619,7 +619,7 @@
                     </div>
                     <div class="flex items-center space-x-3">
                         <p class="text-xs font-bold ${cor}">R$ ${parseFloat(i.valor).toFixed(2)}</p>
-                        <button onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg">delete</button>
+                        <button onclick="excluirLinha(${id})" class="material-icons text-gray-300 text-lg">delete</button>
                     </div>
                 `;
                 container.appendChild(div);
