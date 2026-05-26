@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v8.0.0</title>
+    <title>Finanças Ianne v8.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -550,7 +550,9 @@
             chaves.forEach(mes => {
                 const taxa = historicoTaxasLocal[mes] || 0;
                 let colBarra = taxa >= 20 ? "bg-emerald-500" : (taxa <= 0 ? "bg-red-500" : "bg-purple-600");
-                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate">${mes.split('/')[0]}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full ${colBarra}" style="width: ${Math.max(0, Math.min(100, taxa))}%"></div></div><span class="w-10 text-right text-[10px] text-gray-700">${taxa.toFixed(0)}%</span></div>`;
+                // 🔥 Otimizado para ignorar espaçamentos extras da chave do mês de forma inteligente
+                let nomeMesExibicao = mes.includes('/') ? mes.split('/')[0].trim() : mes;
+                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate uppercase">${nomeMesExibicao}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full ${colBarra}" style="width: ${Math.max(0, Math.min(100, taxa))}%"></div></div><span class="w-10 text-right text-[10px] text-gray-700">${taxa.toFixed(0)}%</span></div>`;
             });
         }
 
@@ -561,7 +563,8 @@
             if(valMaximo <= 0) valMaximo = 1;
             chaves.forEach(mes => {
                 const totalS = historicoPatrimonioNuvem[mes] || 0;
-                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate">${mes.split('/')[0]}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${(totalS / valMaximo) * 100}%"></div></div><span class="w-20 text-right text-[10px] text-gray-700 font-mono">R$ ${totalS.toLocaleString('pt-BR', {maximumFractionDigits: 0})}</span></div>`;
+                let nomeMesExibicao = mes.includes('/') ? mes.split('/')[0].trim() : mes;
+                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate uppercase">${nomeMesExibicao}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${(totalS / valMaximo) * 100}%"></div></div><span class="w-20 text-right text-[10px] text-gray-700 font-mono">R$ ${totalS.toLocaleString('pt-BR', {maximumFractionDigits: 0})}</span></div>`;
             });
         }
 
