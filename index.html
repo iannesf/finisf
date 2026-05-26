@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v7.0.0</title>
+    <title>Finanças Ianne v7.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -286,7 +286,7 @@
             else { alert("Bloqueado."); window.stop(); }
         }
 
-        let bancoContas = []; let dadosCategorias = {}; let orcamentosBase = {}; let saldosVivosContas = {};
+        let bancoContas = []; let dadosCategorias = {}; let orcamentosBase = {}; let saldos VivosContas = {};
         let listaExtratoGlobal = []; let ultimoFiltroFluxo = 'TODOS'; let gastosAgrupadosMesMacro = {}; let limiteLinhasExibidas = 20;
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -372,6 +372,12 @@
                 localStorage.clear(); alert("PIN Incorreto! A recarregar..."); location.reload(); return;
             }
             if(r.result === "success") {
+                const status = document.getElementById('statusApp');
+                if (status) {
+                    status.textContent = "ON";
+                    status.className = "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold";
+                }
+
                 if(r.contas.length > 0) {
                     bancoContas = r.contas.map(c => ({ nome: c.Nome, tipo: c.Tipo, banco: c.Banco }));
                     saldosVivosContas = r.saldos || {};
@@ -382,7 +388,6 @@
                     saldosVivosContas = JSON.parse(localStorage.getItem('cache_saldos')) || {};
                 }
                 
-                // INTEGRAÇÃO REVOLUCIONÁRIA DAS METAS DO SHEETS
                 if(r.metasSheets) {
                     Object.keys(r.metasSheets).forEach(chaveComposta => {
                         const partes = chaveComposta.split('-');
@@ -442,7 +447,6 @@
             }
         }
 
-        // MOTOR REVOLUCIONADO DE SINCRONIZAÇÃO INVISÍVEL DAS METAS PARA O SHEETS
         function atualizarMetaEEnviarSheets(catOuMestre, valorStr) {
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
             const mesStr = selectMes.value; const valNum = parseFloat(valorStr) || 0;
@@ -457,9 +461,8 @@
                 localStorage.setItem('orc_ianne_v2', JSON.stringify(orcamentos));
             }
 
-            renderTelaOrcamentos(); // Renderização instantânea na UI local
+            renderTelaOrcamentos(); 
 
-            // Dispara envio em segundo plano para o Sheets (ou fila)
             const paramsMeta = { acao: "salvarMeta", chave: chaveComposta, valor: valNum };
             if(!navigator.onLine) {
                 let fila = obterFila(); fila.push(paramsMeta); salvarFila(fila);
@@ -470,7 +473,7 @@
                 document.body.appendChild(script);
             }
         }
-        window.posSincMetaInvisivel = function(r) { console.log("Sheets atualizado com a meta!"); };
+        window.posSincMetaInvisivel = function(r) { console.log("Sincronizado!"); };
 
         function autoAjustarVencimento() {
             const d = document.getElementById('dataGasto').value; if(!d) return;
@@ -520,7 +523,7 @@
             }
             let totalConsolidado = 0;
             bancoContas.forEach(c => {
-                const saldoVal = saldosVivosContas[c.nome] || 0; if(c.tipo !== 'Cartão de Crédito') totalConsolidated += saldoVal;
+                const saldoVal = saldosVivosContas[c.nome] || 0; if(c.tipo !== 'Cartão de Crédito') totalConsolidado += saldoVal;
                 const div = document.createElement('div'); div.className = "py-3.5 flex justify-between items-center first:pt-1";
                 let formatador = saldoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 let corTextoSaldo = "text-gray-800";
@@ -647,7 +650,7 @@
             if(filtrados.length === 0) { container.innerHTML = '<p class="text-center text-xs text-gray-400 p-4">Nenhum registro.</p>'; return; }
             filtrados.slice(0, limiteLinhasExibidas).forEach(i => {
                 const div = document.createElement('div'); div.className = "py-3 flex justify-between items-center";
-                div.innerHTML = `<div class="max-w-[70%]"><p class="text-xs font-bold text-gray-800">${i.descricao}${i.offline ? ' <span class="text-[9px] bg-amber-500 text-white font-black px-1 rounded uppercase">Fila</span>':''}</p><p class="text-[9px] text-gray-400">${i.dataGasto} · <span class="bg-gray-100 px-1 rounded font-bold text-purple-800">${i.conta}</span> · <span class="text-gray-500 italic">${i.macro}</span></p></div><div class="flex items-center space-x-3"><p class="text-xs font-bold ${i.tipo==='Receita'?'text-emerald-600':'text-red-600'}">R$ ${parseFloat(i.valor).toFixed(2)}</p><button type="button" onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg" ${i.offline?'disabled style='opacity:0.2'':''}>delete</button></div>`;
+                div.innerHTML = `<div class="max-w-[70%]"><p class="text-xs font-bold text-gray-800">${i.descricao}${i.offline ? ' <span class="text-[9px] bg-amber-500 text-white font-black px-1 rounded uppercase">Fila</span>':''}</p><p class="text-[9px] text-gray-400">${i.dataGasto} · <span class="bg-gray-100 px-1 rounded font-bold text-purple-800">${i.conta}</span> · <span class="text-gray-500 italic">${i.macro}</span></p></div><div class="flex items-center space-x-3"><p class="text-xs font-bold ${i.tipo==='Receita'?'text-emerald-600':'text-red-600'}">R$ ${parseFloat(i.valor).toFixed(2)}</p><button type="button" onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg" ${i.offline?'disabled style="opacity:0.2"':''}>delete</button></div>`;
                 container.appendChild(div);
             });
             if(document.getElementById('btnCarregarMaisExtrato')) document.getElementById('btnCarregarMaisExtrato').classList.toggle('hidden', filtrados.length <= limiteLinhasExibidas);
@@ -739,7 +742,6 @@
             }
         }
 
-        // DESIGN COMPACTO POR BLOCO E % CALCULADA COM DADOS DIRETOS DO SHEETS
         function renderTelaOrcamentos() {
             const container = document.getElementById('editorOrcamentos'); if(!container) return; container.innerHTML = '';
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
@@ -749,7 +751,7 @@
             document.getElementById('inputReceitaManual').value = receitaDoMes > 0 ? receitaDoMes : '';
 
             let somaTotalPlanejado = 0;
-            Object.keys(orcamentosBase).forEach(m => { somaTotalPlanejado += (orcamentos[mes][m] || 0); });
+            Object.keys(orcamentosBase).forEach(m => { const v = orcamentos[mes][m]; if(v !== undefined) somaTotalPlanejado += v; });
             document.getElementById('txtTotalPlanejado').textContent = "R$ " + somaTotalPlanejado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             const saldoLivreOBZ = receitaDoMes - somaTotalPlanejado;
             document.getElementById('txtSaldoLivreOBZ').textContent = "R$ " + saldoLivreOBZ.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
