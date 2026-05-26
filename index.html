@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v7.1.0</title>
+    <title>Finanças Ianne v7.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -76,7 +76,7 @@
                     </div>
                     
                     <div class="space-y-1.5 border-t pt-3">
-                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Crescimento Patrimonial Líquido</h4>
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Evolução Patrimonial Líquida (Sheets)</h4>
                         <div id="historicoPatrimonioLinhas" class="space-y-1.5 text-xs font-bold"></div>
                     </div>
                 </div>
@@ -301,8 +301,8 @@
         let receitasMensaisMestres = JSON.parse(localStorage.getItem('rec_mensais_ianne')) || {};
         let historicoTaxasLocal = JSON.parse(localStorage.getItem('hist_taxas_ianne')) || {};
         
-        // Memória local para a evolução do patrimônio líquido acumulado
-        let historicoPatrimonioLocal = JSON.parse(localStorage.getItem('hist_patrimonio_ianne')) || {};
+        // 🔥 Agora alimentado diretamente pelo Google Sheets via nuvem
+        let historicoPatrimonioNuvem = {}; 
         
         let fluxoAtual = 'Despesa'; let isParcelado = false; let isRecorrente = false;
 
@@ -403,6 +403,11 @@
                     saldosVivosContas = JSON.parse(localStorage.getItem('cache_saldos')) || {};
                 }
                 
+                // Mapeia o histórico patrimonial bruto trazido do Google Sheets
+                if(r.historicoPatrimonial) {
+                    historicoPatrimonioNuvem = r.historicoPatrimonial;
+                }
+
                 if(r.metasSheets) {
                     Object.keys(r.metasSheets).forEach(chaveComposta => {
                         const partes = chaveComposta.split('-');
@@ -557,13 +562,17 @@
             if (document.getElementById('saldoGeralTotal')) document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if (document.getElementById('widgetSaldoTotal')) document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
             
-            // 🔥 NOVO: Intercepta o saldo geral consolidado e salva cumulativamente com base no mês do dashboard ativo
-            const mesAtualChave = document.getElementById('dashMes').textContent;
-            if(mesAtualChave && mesAtualChave !== "Sincronizando..." && totalConsolidado > 0) {
-                // Atualiza apenas se o valor guardado for diferente ou inexistente
-                if(!historicoPatrimonioLocal[mesAtualChave] || historicoPatrimonioLocal[mesAtualChave] !== totalConsolidado) {
-                    historicoPatrimonioLocal[mesAtualChave] = totalConsolidado;
-                    localStorage.setItem('hist_patrimonio_ianne', JSON.stringify(historicoPatrimonioLocal));
+            // 🔥 AUTOMAÇÃO INTEGRADA: Dispara o envio silencioso para o Sheets na nova aba
+            const mesLetrasChave = document.getElementById('dashMes').textContent;
+            if(mesLetrasChave && mesLetrasChave !== "Sincronizando..." && totalConsolidado > 0 && navigator.onLine) {
+                if(!historicoPatrimonioNuvem[mesLetrasChave] || historicoPatrimonioNuvem[mesLetrasChave] !== totalConsolidado) {
+                    historicoPatrimonioNuvem[mesLetrasChave] = totalConsolidado; // atualiza cache local instantâneo
+                    
+                    const paramsPatri = { acao: "registrarPatrimonio", mes: mesLetrasChave, valor: totalConsolidado };
+                    const p = new URLSearchParams({ pin: meuPin, ...paramsPatri });
+                    const script = document.createElement('script');
+                    script.src = WEB_APP_URL + "?" + p.toString() + "&callback=window.posSincMetaInvisivel";
+                    document.body.appendChild(script);
                 }
             }
         }
@@ -613,8 +622,8 @@
                 historicoTaxasLocal[d.mes] = pctInv; 
                 localStorage.setItem('hist_taxas_ianne', JSON.stringify(historicoTaxasLocal));
                 
-                // Força recálculo de saldos de contas para capturar o patrimônio líquido atual com a chave de mês já estabelecida
-                if(bancoContas.length > 0) renderTelaSaldos();
+                // Força o gatilho de leitura de saldos para capturar e sincronizar o patrimônio líquido com o mês oficial estabelecido
+                sincronizarConfiguracoesPlanilha();
                 
                 renderSparklinesTaxas();
                 renderSparklinesPatrimonio();
@@ -642,19 +651,18 @@
             });
         }
 
-        // 🔥 NOVO: Renderiza as barras horizontais proporcionais do patrimônio líquido acumulado
+        // 🔥 GRAFICO ALIMENTADO DIRETAMENTE VIA GOOGLE SHEETS
         function renderSparklinesPatrimonio() {
             const container = document.getElementById('historicoPatrimonioLinhas'); if(!container) return; container.innerHTML = '';
-            const chaves = Object.keys(historicoPatrimonioLocal).sort().slice(-4);
-            if(chaves.length === 0) { container.innerHTML = '<p class="text-gray-400 italic font-medium text-[11px]">Sincronizando histórico patrimonial...</p>'; return; }
+            const chaves = Object.keys(historicoPatrimonioNuvem).sort().slice(-4);
+            if(chaves.length === 0) { container.innerHTML = '<p class="text-gray-400 italic font-medium text-[11px]">Buscando histórico consolidado do Sheets...</p>'; return; }
             
-            // Encontra o maior valor histórico do patrimônio para servir de escala 100% gráfica
             let valMaximo = 0;
-            chaves.forEach(mes => { if(historicoPatrimonioLocal[mes] > valMaximo) valMaximo = historicoPatrimonioLocal[mes]; });
+            chaves.forEach(mes => { if(historicoPatrimonioNuvem[mes] > valMaximo) valMaximo = historicoPatrimonioNuvem[mes]; });
             if(valMaximo <= 0) valMaximo = 1;
 
             chaves.forEach(mes => {
-                const totalS = historicoPatrimonioLocal[mes] || 0;
+                const totalS = historicoPatrimonioNuvem[mes] || 0;
                 const pctVisual = (totalS / valMaximo) * 100;
                 const div = document.createElement('div'); div.className = "flex items-center space-x-2";
                 div.innerHTML = `<span class="w-16 text-gray-500 text-[10px] truncate">${mes.split(' / ')[0]}</span><div class="flex-1 bg-gray-100 rounded-full h-2 relative"><div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${pctVisual}%"></div></div><span class="w-20 text-right text-[10px] text-gray-700 font-mono">R$ ${totalS.toLocaleString('pt-BR', {maximumFractionDigits: 0})}</span>`;
