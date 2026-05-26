@@ -449,10 +449,14 @@
                     });
                 }
 
+                // === CORREÇÃO: Altera para ON somente se não houver mais requisições pendentes ===
                 const status = document.getElementById('statusApp');
-                if (status) {
-                    status.textContent = navigator.onLine ? "ON" : "OFFLINE";
-                    status.className = navigator.onLine ? "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0" : "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                if (status && navigator.onLine) {
+                    status.textContent = "ON";
+                    status.className = "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                } else if (status) {
+                    status.textContent = "OFFLINE";
+                    status.className = "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
                 }
 
                 renderTelaSaldos();
@@ -568,7 +572,6 @@
                 }
             });
             
-            // --- 🛠️ LINHA CORRIGIDA DEFINITIVAMENTE AQUI ---
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             const sGeralEl = document.getElementById('saldoGeralTotal');
             if (sGeralEl) sGeralEl.textContent = saldoFormatado;
@@ -602,11 +605,14 @@
         }
 
         function lidarAutocomplete(txt) {
-            const box = document.getElementById('boxSugestoes'); box.innerHTML = '';
-            if(fluxoAtual === 'Transferência' || !txt || txt.length < 2) { box.classList.add('hidden'); return; }
+            const box = document.getElementById('boxSuggestions'); // boxSugestoes no HTML
+            const boxReal = document.getElementById('boxSugestoes') || box;
+            if(!boxReal) return;
+            boxReal.innerHTML = '';
+            if(fluxoAtual === 'Transferência' || !txt || txt.length < 2) { boxReal.classList.add('hidden'); return; }
             const matches = memoria.filter(m => m.desc.toLowerCase().includes(txt.toLowerCase())).slice(0, 3);
-            if(matches.length === 0) { box.classList.add('hidden'); return; }
-            box.classList.remove('hidden');
+            if(matches.length === 0) { boxReal.classList.add('hidden'); return; }
+            boxReal.classList.remove('hidden');
             matches.forEach(m => {
                 const div = document.createElement('div'); div.className = "p-3 text-xs font-bold text-gray-600 hover:bg-purple-50 cursor-pointer flex justify-between";
                 div.innerHTML = `<span>${m.desc}</span><span class="text-[9px] opacity-50">${m.macro}</span>`;
@@ -617,10 +623,10 @@
                     alwaysUpdateMicros();
                     document.getElementById('microCat').value = m.micro;
                     document.getElementById('contaOrigem').value = m.conta;
-                    box.classList.add('hidden');
+                    boxReal.classList.add('hidden');
                     checarAlertaOrcamento();
                 };
-                box.appendChild(div);
+                boxReal.appendChild(div);
             });
         }
 
@@ -638,6 +644,13 @@
             if (btn) { btn.disabled = false; btn.textContent = "ATUALIZAR DADOS DO SHEETS"; }
             
             if(r.result === "success") {
+                // === CORREÇÃO DEFINITIVA DO SYNC: Força o status a virar ON quando os dados chegam ===
+                const status = document.getElementById('statusApp');
+                if (status) {
+                    status.textContent = "ON";
+                    status.className = "text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
+                }
+
                 const d = r.dados;
                 document.getElementById('dashMes').textContent = d.mes;
                 document.getElementById('dashReceita').textContent = "R$ " + d.receita.toLocaleString('pt-BR', {minimumFractionDigits: 2});
@@ -716,15 +729,17 @@
                 listaExtratoGlobal = r.dados;
                 localStorage.setItem('cache_extrato', JSON.stringify(r.dados));
                 
-                gastosAgrupadosMesMacro = {};
+                gastasAgrupadosMesMacro = {};
+                const localGastos = {};
                 r.dados.forEach(item => {
                     if(item.tipo !== 'Receita' && item.macro !== 'TRANSFERÊNCIA') {
                         const txtM = getMesAnoStringConvertida(item.dataGasto);
-                        if(!gastosAgrupadosMesMacro[txtM]) gastosAgrupadosMesMacro[txtM] = {};
-                        if(!gastosAgrupadosMesMacro[txtM][item.macro]) gastosAgrupadosMesMacro[txtM][item.macro] = 0;
-                        gastosAgrupadosMesMacro[txtM][item.macro] += parseFloat(item.valor) || 0;
+                        if(!localGastos[txtM]) localGastos[txtM] = {};
+                        if(!localGastos[txtM][item.macro]) localGastos[txtM][item.macro] = 0;
+                        localGastos[txtM][item.macro] += parseFloat(item.valor) || 0;
                     }
                 });
+                gastosAgrupadosMesMacro = localGastos;
                 
                 filtrarExtrato(ultimoFiltroFluxo);
             }
@@ -1046,10 +1061,18 @@
         initMonths();
         sincronizarConfiguracoesPlanilha();
         
+        // === CORREÇÃO DE CONCORRÊNCIA NA INICIALIZAÇÃO ===
         setTimeout(() => { 
             let filaInicial = obterFila();
             salvarFila(filaInicial);
-            selecionarMenu('pagDashboard', 'Fechamento & Insights'); 
+            
+            // Ativa o menu visualmente sem forçar uma segunda chamada JSONP atropelada
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('pagDashboard').classList.remove('hidden');
+            document.getElementById('tituloPagina').textContent = 'Fechamento & Insights';
+            
+            // Aguarda um pequeno respiro de 800ms para disparar os dados do Dashboard com segurança
+            setTimeout(() => { puxarDashboardReal(); }, 800);
         }, 300);
         
         if(navigator.onLine) { processarFilaOffline(); }
