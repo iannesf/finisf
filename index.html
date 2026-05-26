@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v6.7.0</title>
+    <title>Finanças Ianne v6.8.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -214,16 +214,35 @@
         </section>
 
         <section id="pagOrcamento" class="hidden space-y-4">
-            <div class="bg-white p-5 rounded-2xl shadow-sm">
-                <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Selecione o Mês</label>
-                <select id="filtroMesOrcamento" class="w-full p-3 border rounded-xl mb-4 font-bold bg-white" onchange="renderTelaOrcamentos()"></select>
+            <div class="bg-gradient-to-br from-purple-800 to-purple-900 p-4 rounded-2xl shadow-md text-white space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-[11px] font-bold uppercase tracking-wider opacity-80">Selecione o Mês</label>
+                    <select id="filtroMesOrcamento" class="p-1.5 border border-purple-500 rounded-xl text-xs font-bold bg-purple-950 text-white focus:outline-none" onchange="renderTelaOrcamentos()"></select>
+                </div>
                 
-                <div class="mb-2 grid grid-cols-3 text-[10px] font-bold uppercase text-gray-400 px-1">
+                <div class="grid grid-cols-3 gap-2 pt-1 text-center">
+                    <div class="bg-purple-950/40 p-2 rounded-xl border border-purple-700/30">
+                        <p class="text-[9px] font-bold tracking-wider opacity-60 uppercase">Receita (R$)</p>
+                        <input type="number" id="inputReceitaManual" placeholder="0" class="w-full bg-transparent font-black text-center text-sm mt-0.5 outline-none text-emerald-300 placeholder-purple-400" onchange="salvarReceitaManual(this.value)">
+                    </div>
+                    <div class="bg-purple-950/40 p-2 rounded-xl border border-purple-700/30 flex flex-col justify-center">
+                        <p class="text-[9px] font-bold tracking-wider opacity-60 uppercase">Planejado</p>
+                        <p id="txtTotalPlanejado" class="font-black text-sm text-purple-200 mt-0.5">R$ 0,00</p>
+                    </div>
+                    <div class="bg-purple-950/40 p-2 rounded-xl border border-purple-700/30 flex flex-col justify-center">
+                        <p class="text-[9px] font-bold tracking-wider opacity-60 uppercase">Saldo Livre</p>
+                        <p id="txtSaldoLivreOBZ" class="font-black text-sm mt-0.5 text-white">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm space-y-4">
+                <div class="mb-1 grid grid-cols-3 text-[10px] font-bold uppercase text-gray-400 px-1">
                     <span>Categoria</span>
-                    <span class="text-center">Planejado (R$)</span>
+                    <span class="text-center">Meta (R$)</span>
                     <span class="text-right">Restante</span>
                 </div>
-                <div id="editorOrcamentos" class="space-y-5"></div>
+                <div id="editorOrcamentos" class="space-y-4"></div>
             </div>
         </section>
 
@@ -264,9 +283,7 @@
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6gmdfsXQOk0ioXayZiEVUYsqEbUaII7ljAWcHOHAKXST6worW6no6YIlF7oykIT0fNA/exec";
 
-        // ==========================================
-        // 🔑 CONTROLE DE AUTENTICAÇÃO LOCAL (PIN)
-        // ==========================================
+        // CONTROLE DE AUTENTICAÇÃO LOCAL (PIN)
         let meuPin = localStorage.getItem('finisf_pin');
         if (!meuPin) {
             meuPin = prompt("Insira seu PIN de 4 dígitos para acessar o App Financeiro:");
@@ -277,7 +294,6 @@
                 window.stop();
             }
         }
-        // ==========================================
 
         let bancoContas = [];
         let dadosCategorias = {};
@@ -290,6 +306,7 @@
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
         let orcamentos = JSON.parse(localStorage.getItem('orc_ianne_v2')) || {};
+        let receitasMensaisMestres = JSON.parse(localStorage.getItem('rec_mensais_ianne')) || {};
         let historicoTaxasLocal = JSON.parse(localStorage.getItem('hist_taxas_ianne')) || {};
         let fluxoAtual = 'Despesa';
         let isParcelado = false;
@@ -308,9 +325,7 @@
             checarAlertaOrcamento();
         }
 
-        // ==========================================
-        // 🛠️ MOTOR DE RESILIÊNCIA DA FILA OFFLINE
-        // ==========================================
+        // MOTOR DE RESILIÊNCIA DA FILA OFFLINE
         function obterFila() { return JSON.parse(localStorage.getItem('fila_financeiro_ianne')) || []; }
         function salvarFila(fila) { 
             localStorage.setItem('fila_financeiro_ianne', JSON.stringify(fila)); 
@@ -376,7 +391,6 @@
                 status.className = "text-[10px] bg-gray-500 text-white px-2 py-1 rounded-full font-mono font-bold absolute right-0";
             }
         });
-        // ==========================================
 
         function sincronizarConfiguracoesPlanilha() {
             if(!navigator.onLine) {
@@ -416,7 +430,7 @@
                 if(r.categorias && r.categorias.length > 0) {
                     r.categorias.forEach(cat => {
                         const macro = cat.Macro; const micro = cat.Micro;
-                        if(macro) {
+                        if(macro && macro.toUpperCase() !== 'RECEITA' && macro.toUpperCase() !== 'RECEITAS') {
                             if(!dadosCategorias[macro]) dadosCategorias[macro] = [];
                             if(micro && !dadosCategorias[macro].includes(micro)) dadosCategorias[macro].push(micro);
                             orcamentosBase[macro] = 0; 
@@ -670,7 +684,7 @@
                 if(pctInv >= 20) {
                     criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
                 } else if (pctInv > 0 && pctInv < 20) {
-                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
+                    criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas in jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 } else {
                     criarCaixaInsight(container, "Aviso crítico: Seus custos fixos ou variáveis superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
                 }
@@ -940,7 +954,7 @@
             if (btn) { btn.disabled = true; btn.textContent = "GRAVANDO..."; }
             
             const paramsObjeto = {
-                tipo: fluxoAtual, 
+                tipo: flujoAtual, 
                 valor: document.getElementById('valorInput').value,
                 descricao: document.getElementById('descricaoInput').value,
                 macro: fluxoAtual === 'Transferência' ? 'TRANSFERÊNCIA' : document.getElementById('macroCat').value,
@@ -1027,9 +1041,17 @@
             }
         }
 
-        // ==========================================
-        // 🛠️ NOVO MOTOR VISUAL DA ABA METAS (OPÇÃO A)
-        // ==========================================
+        // SALVA AS RECEITAS DIGITADAS POR MÊS ISOLADO
+        function salvarReceitaManual(val) {
+            const selectMes = document.getElementById('filtroMesOrcamento');
+            if(!selectMes || !selectMes.value) return;
+            const mes = selectMes.value;
+            receitasMensaisMestres[mes] = parseFloat(val) || 0;
+            localStorage.setItem('rec_mensais_ianne', JSON.stringify(receitasMensaisMestres));
+            renderTelaOrcamentos(); // Recalcula o painel instantaneamente
+        }
+
+        // MOTOR VISUAL DA ABA METAS COM RESUMO BASE ZERO INJETADO
         function renderTelaOrcamentos() {
             const container = document.getElementById('editorOrcamentos'); if(!container) return; container.innerHTML = '';
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
@@ -1037,16 +1059,43 @@
             
             if(!orcamentos[mes]) orcamentos[mes] = { ...orcamentosBase };
             
+            // Puxa receita salva desse mês ou deixa zero
+            const receitaDoMes = receitasMensaisMestres[mes] || 0;
+            document.getElementById('inputReceitaManual').value = receitaDoMes > 0 ? receitaDoMes : '';
+
+            let somaTotalPlanejado = 0;
+
+            // Primeiro loop: Calcula a soma de todas as metas ativas
+            Object.keys(orcamentosBase).forEach(m => {
+                const vPlanejado = orcamentos[mes][m] !== undefined ? orcamentos[mes][m] : 0;
+                somaTotalPlanejado += vPlanejado;
+            });
+
+            // Atualiza o cartão do "Planejado Total"
+            document.getElementById('txtTotalPlanejado').textContent = "R$ " + somaTotalPlanejado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+            // Calcula e atualiza o cartão de "Saldo Livre OBZ"
+            const saldoLivreOBZ = receitaDoMes - somaTotalPlanejado;
+            const elSaldoOBZ = document.getElementById('txtSaldoLivreOBZ');
+            elSaldoOBZ.textContent = "R$ " + saldoLivreOBZ.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            
+            if(saldoLivreOBZ > 0) {
+                elSaldoOBZ.className = "font-black text-sm mt-0.5 text-emerald-300";
+            } else if(saldoLivreOBZ < 0) {
+                elSaldoOBZ.className = "font-black text-sm mt-0.5 text-red-400 animate-pulse";
+            } else {
+                elSaldoOBZ.className = "font-black text-sm mt-0.5 text-white";
+            }
+
+            // Segundo loop: Renderiza os termômetros de gastos
             Object.keys(orcamentosBase).forEach(m => {
                 const vPlanejado = orcamentos[mes][m] !== undefined ? orcamentos[mes][m] : 0;
                 const vRealizado = gastosAgrupadosMesMacro[mes] && gastosAgrupadosMesMacro[mes][m] ? gastosAgrupadosMesMacro[mes][m] : 0;
                 const vRestante = vPlanejado - vRealizado;
 
-                // Cálculo da percentagem gasta
                 let pctGasta = vPlanejado > 0 ? (vRealizado / vPlanejado) * 100 : 0;
-                let pctBarra = Math.min(100, pctGasta); // Limita o preenchimento visual em 100%
+                let pctBarra = Math.min(100, pctGasta);
 
-                // Definição dinâmica de cores e animações do termómetro
                 let corBarra = "bg-purple-600"; 
                 let corTextoRestante = "text-emerald-600";
                 
@@ -1070,7 +1119,6 @@
                             ${vRestante >= 0 ? 'R$ ' + vRestante.toFixed(2) : 'Estourou R$ ' + Math.abs(vRestante).toFixed(2)}
                         </span>
                     </div>
-                    
                     <div class="space-y-1">
                         <div class="w-full bg-gray-100 rounded-full h-2 relative overflow-hidden">
                             <div class="h-full rounded-full ${corBarra} transition-all duration-500" style="width: ${pctBarra}%"></div>
@@ -1090,7 +1138,6 @@
         initMonths();
         sincronizarConfiguracoesPlanilha();
         
-        // CORREÇÃO DE CONCORRÊNCIA NA INICIALIZAÇÃO
         setTimeout(() => { 
             let filaInicial = obterFila();
             salvarFila(filaInicial);
