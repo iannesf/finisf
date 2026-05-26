@@ -286,7 +286,7 @@
             else { alert("Bloqueado."); window.stop(); }
         }
 
-        let bancoContas = []; let dadosCategorias = {}; let orcamentosBase = {}; let saldos VivosContas = {};
+        let bancoContas = []; let dadosCategorias = {}; let orcamentosBase = {}; let saldosVivosContas = {};
         let listaExtratoGlobal = []; let ultimoFiltroFluxo = 'TODOS'; let gastosAgrupadosMesMacro = {}; let limiteLinhasExibidas = 20;
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -347,6 +347,8 @@
                 let fila = obterFila(); fila.shift(); salvarFila(fila);
                 if (fila.length > 0) setTimeout(processarFilaOffline, 300);
                 else sincronizarConfiguracoesPlanilha();
+            } else {
+                console.log("Erro temporário ao enviar da fila.");
             }
         };
 
