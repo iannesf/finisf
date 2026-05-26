@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v8.0.1</title>
+    <title>Finanças Ianne v8.1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -92,7 +92,7 @@
                         <span class="material-icons text-purple-600 text-lg">psychology</span><span>Motor de Insights</span>
                     </h3>
                     <div id="containerInsights" class="space-y-2">
-                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar os dados vivos.</p>
+                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar los dados vivos.</p>
                     </div>
                 </div>
                 
@@ -173,13 +173,21 @@
                 <h2 id="saldoGeralTotal" class="text-3xl font-black mt-1">R$ 0,00</h2>
                 <p class="text-[9px] opacity-50 mt-1">*Não inclui faturas de cartões pendentes</p>
             </div>
-            <div class="bg-white p-5 rounded-2xl shadow-sm space-y-3">
-                <div class="flex justify-between items-center mb-2">
-                    <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wider">Contas & Carteiras</h3>
+            
+            <div class="bg-white p-5 rounded-2xl shadow-sm space-y-4">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">account_balance</span><span>Contas & Carteiras</span></h3>
                     <button onclick="sincronizarConfiguracoesPlanilha()" class="material-icons text-purple-800 text-lg">refresh</button>
                 </div>
-                <div id="listaSaldosContas" class="space-y-2 divide-y divide-gray-100">
-                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando saldos...</p>
+                <div id="listaSaldosContasEfetivas" class="space-y-2 divide-y divide-gray-100">
+                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando contas...</p>
+                </div>
+                
+                <div class="flex justify-between items-center border-b pb-2 pt-4">
+                    <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">credit_card</span><span>Cartões de Crédito (Faturas)</span></h3>
+                </div>
+                <div id="listaSaldosCartoes" class="space-y-2 divide-y divide-gray-100">
+                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando cartões...</p>
                 </div>
             </div>
         </section>
@@ -357,15 +365,27 @@
                 if(r.historicoPatrimonial) historicoPatrimonioNuvem = r.historicoPatrimonial;
 
                 if(r.metasSheets) {
+                    // 🔥 Tratamento agressivo contra chaves duplicadas por espaçamento na nuvem
+                    let novoOrcamentos = {};
+                    let novoReceitasMestres = {};
                     Object.keys(r.metasSheets).forEach(chaveComposta => {
                         const partes = chaveComposta.split('-');
                         if(partes.length === 2) {
-                            const mesAlvo = partes[0]; const categoriaAlvo = partes[1];
+                            // Limpa qualquer espaço invisível vindo do Sheets (ex: "maio / 2026" vira "maio/2026")
+                            const mesAlvo = partes[0].replace(/\s+/g, '').toLowerCase(); 
+                            const categoriaAlvo = partes[1];
                             const valAlvo = r.metasSheets[chaveComposta];
-                            if(categoriaAlvo === 'RECEITA_MESTRE') receitasMensaisMestres[mesAlvo] = valAlvo;
-                            else { if(!orcamentos[mesAlvo]) orcamentos[mesAlvo] = {}; orcamentos[mesAlvo][categoriaAlvo] = valAlvo; }
+                            
+                            if(categoriaAlvo === 'RECEITA_MESTRE') {
+                                novoReceitasMestres[mesAlvo] = valAlvo;
+                            } else { 
+                                if(!novoOrcamentos[mesAlvo]) novoOrcamentos[mesAlvo] = {}; 
+                                novoOrcamentos[mesAlvo][categoriaAlvo] = valAlvo; 
+                            }
                         }
                     });
+                    orcamentos = novoOrcamentos;
+                    receitasMensaisMestres = novoReceitasMestres;
                     localStorage.setItem('orc_ianne_v2', JSON.stringify(orcamentos));
                     localStorage.setItem('rec_mensais_ianne', JSON.stringify(receitasMensaisMestres));
                 }
@@ -408,8 +428,9 @@
 
         function atualizarMetaEEnviarSheets(catOuMestre, valorStr) {
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
-            const mesStr = selectMes.value; const valNum = parseFloat(valorStr) || 0;
-            const chaveComposta = `${mesStr}-${catOuMestre}`;
+            const mesStr = selectMes.value.replace(/\s+/g, '').toLowerCase(); 
+            const valNum = parseFloat(valorStr) || 0;
+            const chaveComposta = `${selectMes.value}-${catOuMestre}`; // Envia pro sheets formatado
 
             if(catOuMestre === 'RECEITA_MESTRE') receitasMensaisMestres[mesStr] = valNum;
             else { if(!orcamentos[mesStr]) orcamentos[mesStr] = { ...orcamentosBase }; orcamentos[mesStr][catOuMestre] = valNum; }
@@ -439,7 +460,8 @@
             const macro = document.getElementById('macroCat').value; const valor = parseFloat(document.getElementById('valorInput').value) || 0;
             const dataG = document.getElementById('dataGasto').value; const alerta = document.getElementById('alertaOrcamentoGasto');
             if(!macro || valor <= 0 || !dataG || !alerta) { if(alerta) alerta.classList.add('hidden'); return; }
-            const txtMes = getMesAnoString(dataG); const planejado = (orcamentos[txtMes] && orcamentos[txtMes][macro]) || 0;
+            const txtMes = getMesAnoString(dataG).replace(/\s+/g, '').toLowerCase(); 
+            const planejado = (orcamentos[txtMes] && orcamentos[txtMes][macro]) || 0;
             const gastoAtual = (gastosAgrupadosMesMacro[txtMes] && gastosAgrupadosMesMacro[txtMes][macro]) || 0;
             const restante = planejado - gastoAtual;
             if(planejado === 0) { alerta.classList.add('hidden'); return; }
@@ -459,7 +481,13 @@
         }
 
         function renderTelaSaldos() {
-            const container = document.getElementById('listaSaldosContas'); if(!container) return; container.innerHTML = ''; 
+            const containerContas = document.getElementById('listaSaldosContasEfetivas');
+            const containerCartoes = document.getElementById('listaSaldosCartoes');
+            if(!containerContas || !containerCartoes) return;
+            
+            containerContas.innerHTML = '';
+            containerCartoes.innerHTML = ''; 
+            
             const carrossel = document.getElementById('carrosselSaldos');
             if(carrossel) carrossel.innerHTML = `<div class="min-w-[85%] bg-gradient-to-br from-purple-900 to-purple-950 text-white p-4 rounded-2xl shadow-sm flex justify-between items-center snap-center"><div><p class="text-[10px] font-bold uppercase tracking-wider opacity-60">Saldo Vivo Geral</p><h3 id="widgetSaldoTotal" class="text-xl font-black mt-0.5">R$ 0,00</h3></div><span class="material-icons opacity-40 text-2xl">account_balance_wallet</span></div>`;
             
@@ -469,24 +497,42 @@
                 const div = document.createElement('div'); div.className = "py-3.5 flex justify-between items-center first:pt-1";
                 let formatador = "R$ " + saldoVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                 let corTextoSaldo = saldoVal >= 0 ? "text-emerald-600 font-bold" : "text-red-600 font-bold";
-                if (c.tipo === 'Cartão de Crédito') { corTextoSaldo = "text-purple-700 font-bold"; formatador = "Fatura: R$ " + Math.abs(saldoVal).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
                 
-                let icone = c.tipo === "Investimentos" ? "trending_up" : (c.tipo === "Cartão de Crédito" ? "credit_card" : "account_balance");
+                let icone = "account_balance";
+                if(c.tipo === "Investimentos") icone = "trending_up";
+                else if(c.tipo === "Cartão de Crédito") icone = "credit_card";
+
+                if (c.tipo === 'Cartão de Crédito') { 
+                    corTextoSaldo = "text-purple-700 font-bold"; 
+                    formatador = "Fatura: R$ " + Math.abs(saldoVal).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); 
+                }
+                
                 div.innerHTML = `<div class="flex items-center space-x-3"><span class="material-icons text-gray-400 text-xl">${icone}</span><div><p class="text-xs font-bold text-gray-800 leading-tight">${c.nome}</p><p class="text-[9px] text-gray-400 font-medium">${c.banco || c.tipo}</p></div></div><p class="text-xs ${corTextoSaldo}">${formatador}</p>`;
-                container.appendChild(div);
+                
+                // 🔥 Distribuição visual separada por blocos solicitada!
+                if(c.tipo === 'Cartão de Crédito') {
+                    containerCartoes.appendChild(div);
+                } else {
+                    containerContas.appendChild(div);
+                }
+
                 if(carrossel) {
                     carrossel.innerHTML += `<div class="min-w-[70%] bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center snap-center"><div><p class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">${c.nome}</p><h4 class="text-sm font-black mt-0.5 ${corTextoSaldo}">${formatador}</h4></div><span class="material-icons text-gray-300 text-xl">${icone}</span></div>`;
                 }
             });
+
+            if(containerContas.children.length === 0) containerContas.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhuma conta cadastrada.</p>`;
+            if(containerCartoes.children.length === 0) containerCartoes.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhum cartão cadastrado.</p>`;
+
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             if (document.getElementById('saldoGeralTotal')) document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if (document.getElementById('widgetSaldoTotal')) document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
             
-            const mesLetrasChave = document.getElementById('dashMes').textContent;
-            if(mesLetrasChave && mesLetrasChave !== "Sincronizando..." && totalConsolidado > 0 && navigator.onLine) {
+            const mesLetrasChave = document.getElementById('dashMes').textContent.replace(/\s+/g, '').toLowerCase();
+            if(mesLetrasChave && mesLetrasChave !== "sincronizando..." && totalConsolidado > 0 && navigator.onLine) {
                 if(!historicoPatrimonioNuvem[mesLetrasChave] || historicoPatrimonioNuvem[mesLetrasChave] !== totalConsolidado) {
                     historicoPatrimonioNuvem[mesLetrasChave] = totalConsolidado;
-                    scriptRequest({ acao: "registrarPatrimonio", mes: mesLetrasChave, valor: totalConsolidado });
+                    scriptRequest({ acao: "registrarPatrimonio", mes: document.getElementById('dashMes').textContent, valor: totalConsolidado });
                 }
             }
         }
@@ -503,7 +549,7 @@
         }
 
         function lidarAutocomplete(txt) {
-            const box = document.getElementById('boxSugestoes'); if(!box) return; box.innerHTML = '';
+            const box = document.getElementById('boxSuggestions'); if(!box) return; box.innerHTML = '';
             if(fluxoAtual === 'Transferência' || fluxoAtual.startsWith('Ajuste') || !txt || txt.length < 2) { box.classList.add('hidden'); return; }
             const matches = memoria.filter(m => m.desc.toLowerCase().includes(txt.toLowerCase())).slice(0, 3);
             if(matches.length === 0) { box.classList.add('hidden'); return; } box.classList.remove('hidden');
@@ -534,7 +580,9 @@
                 document.getElementById('dashComprometido').textContent = "R$ " + d.comprometidoAinda.toLocaleString('pt-BR', {minimumFractionDigits: 2});
                 
                 const pctInv = d.taxaInv * 100; document.getElementById('dashTaxa').textContent = pctInv.toFixed(1) + "%";
-                historicoTaxasLocal[d.mes] = pctInv; localStorage.setItem('hist_taxas_ianne', JSON.stringify(historicoTaxasLocal));
+                
+                let chaveM = d.mes.replace(/\s+/g, '').toLowerCase();
+                historicoTaxasLocal[chaveM] = pctInv; localStorage.setItem('hist_taxas_ianne', JSON.stringify(historicoTaxasLocal));
                 
                 sincronizarConfiguracoesPlanilha(); renderSparklinesTaxas(); renderSparklinesPatrimonio();
                 
@@ -546,25 +594,34 @@
 
         function renderSparklinesTaxas() {
             const container = document.getElementById('historicoTaxasLinhas'); if(!container) return; container.innerHTML = '';
-            const chaves = Object.keys(historicoTaxasLocal).sort().slice(-4);
+            
+            // Filtra e limpa chaves duplicadas que possam existir na memória antiga
+            let chavesLimpas = {};
+            Object.keys(historicoTaxasLocal).forEach(k => { chavesLimpas[k.replace(/\s+/g, '').toLowerCase()] = historicoTaxasLocal[k]; });
+            
+            const chaves = Object.keys(chavesLimpas).sort().slice(-4);
             chaves.forEach(mes => {
-                const taxa = historicoTaxasLocal[mes] || 0;
+                const taxa = chavesLimpas[mes] || 0;
                 let colBarra = taxa >= 20 ? "bg-emerald-500" : (taxa <= 0 ? "bg-red-500" : "bg-purple-600");
-                // 🔥 Otimizado para ignorar espaçamentos extras da chave do mês de forma inteligente
-                let nomeMesExibicao = mes.includes('/') ? mes.split('/')[0].trim() : mes;
-                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate uppercase">${nomeMesExibicao}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full ${colBarra}" style="width: ${Math.max(0, Math.min(100, taxa))}%"></div></div><span class="w-10 text-right text-[10px] text-gray-700">${taxa.toFixed(0)}%</span></div>`;
+                let nomeMesExibicao = mes.split('/')[0];
+                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate uppercase font-bold">${nomeMesExibicao}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full ${colBarra}" style="width: ${Math.max(0, Math.min(100, taxa))}%"></div></div><span class="w-10 text-right text-[10px] text-gray-700">${taxa.toFixed(0)}%</span></div>`;
             });
         }
 
         function renderSparklinesPatrimonio() {
             const container = document.getElementById('historicoPatrimonioLinhas'); if(!container) return; container.innerHTML = '';
-            const chaves = Object.keys(historicoPatrimonioNuvem).sort().slice(-4);
-            let valMaximo = 0; chaves.forEach(mes => { if(historicoPatrimonioNuvem[mes] > valMaximo) valMaximo = historicoPatrimonioNuvem[mes]; });
+            
+            let chavesLimpas = {};
+            Object.keys(historicoPatrimonioNuvem).forEach(k => { chavesLimpas[k.replace(/\s+/g, '').toLowerCase()] = historicoPatrimonioNuvem[k]; });
+            
+            const chaves = Object.keys(chavesLimpas).sort().slice(-4);
+            let valMaximo = 0; chaves.forEach(mes => { if(chavesLimpas[mes] > valMaximo) valMaximo = chavesLimpas[mes]; });
             if(valMaximo <= 0) valMaximo = 1;
+            
             chaves.forEach(mes => {
-                const totalS = historicoPatrimonioNuvem[mes] || 0;
-                let nomeMesExibicao = mes.includes('/') ? mes.split('/')[0].trim() : mes;
-                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate uppercase">${nomeMesExibicao}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${(totalS / valMaximo) * 100}%"></div></div><span class="w-20 text-right text-[10px] text-gray-700 font-mono">R$ ${totalS.toLocaleString('pt-BR', {maximumFractionDigits: 0})}</span></div>`;
+                const totalS = chavesLimpas[mes] || 0;
+                let nomeMesExibicao = mes.split('/')[0];
+                container.innerHTML += `<div class="flex items-center space-x-2"><span class="w-16 text-gray-500 text-[10px] truncate uppercase font-bold">${nomeMesExibicao}</span><div class="flex-1 bg-gray-100 rounded-full h-2"><div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${(totalS / valMaximo) * 100}%"></div></div><span class="w-20 text-right text-[10px] text-gray-700 font-mono">R$ ${totalS.toLocaleString('pt-BR', {maximumFractionDigits: 0})}</span></div>`;
             });
         }
 
@@ -587,7 +644,7 @@
                         const partes = item.dataGasto.split('/');
                         if(partes.length === 3) {
                             const names = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-                            const txtM = `${names[parseInt(partes[1]) - 1]}/${partes[2]}`;
+                            const txtM = `${names[parseInt(partes[1]) - 1]}/${partes[2]}`.replace(/\s+/g, '').toLowerCase();
                             if(!localGastos[txtM]) localGastos[txtM] = {}; if(!localGastos[txtM][item.macro]) localGastos[txtM][item.macro] = 0;
                             localGastos[txtM][item.macro] += parseFloat(item.valor) || 0;
                         }
@@ -729,11 +786,15 @@
         function renderTelaOrcamentos() {
             const container = document.getElementById('editorOrcamentos'); if(!container) return; container.innerHTML = '';
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
-            const mes = selectMes.value; if(!orcamentos[mes]) orcamentos[mes] = { ...orcamentosBase };
-            const receiverDoMes = receitasMensaisMestres[mes] || 0;
+            
+            const mesChaveBruta = selectMes.value;
+            const mesChaveLimpa = mesChaveBruta.replace(/\s+/g, '').toLowerCase(); 
+            
+            if(!orcamentos[mesChaveLimpa]) orcamentos[mesChaveLimpa] = { ...orcamentosBase };
+            const receiverDoMes = receitasMensaisMestres[mesChaveLimpa] || 0;
             document.getElementById('inputReceitaManual').value = receiverDoMes > 0 ? receiverDoMes : '';
 
-            let somaTotalPlanejado = 0; Object.keys(orcamentosBase).forEach(m => { const v = orcamentos[mes][m]; if(v !== undefined) somaTotalPlanejado += v; });
+            let somaTotalPlanejado = 0; Object.keys(orcamentosBase).forEach(m => { const v = orcamentos[mesChaveLimpa][m]; if(v !== undefined) somaTotalPlanejado += v; });
             document.getElementById('txtTotalPlanejado').textContent = "R$ " + somaTotalPlanejado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             const saldoLivreOBZ = receiverDoMes - somaTotalPlanejado;
             document.getElementById('txtSaldoLivreOBZ').textContent = "R$ " + saldoLivreOBZ.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
@@ -747,7 +808,7 @@
                 const subC = document.getElementById(`sub_b_${nomeB.replace(/\s+/g, '')}`);
 
                 bInfo.itens.forEach(m => {
-                    const vPlan = orcamentos[mes][m] || 0; const vReal = (gastosAgrupadosMesMacro[mes] && gastosAgrupadosMesMacro[mes][m]) || 0;
+                    const vPlan = orcamentos[mesChaveLimpa][m] || 0; const vReal = (gastosAgrupadosMesMacro[mesChaveLimpa] && gastosAgrupadosMesMacro[mesChaveLimpa][m]) || 0;
                     const vRest = vPlan - vReal; let pctG = vPlan > 0 ? (vReal / vPlan) * 100 : 0;
                     let colBarra = pctG >= 100 ? "animate-pulse-red bg-red-600" : (pctG >= 70 ? "bg-amber-500" : "bg-purple-600");
                     let corT = pctG >= 100 ? "text-red-600 font-black animate-pulse" : "text-emerald-600";
