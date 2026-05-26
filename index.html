@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v7.0.2</title>
+    <title>Finanças Ianne v7.1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -69,9 +69,16 @@
                     </div>
                 </div>
 
-                <div class="text-left space-y-2 border-t pt-4">
-                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Evolução de Aportes</h4>
-                    <div id="historicoTaxasLinhas" class="space-y-1.5 text-xs font-bold"></div>
+                <div class="text-left space-y-4 border-t pt-4">
+                    <div class="space-y-1.5">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Evolução de Aportes Mês a Mês</h4>
+                        <div id="historicoTaxasLinhas" class="space-y-1.5 text-xs font-bold"></div>
+                    </div>
+                    
+                    <div class="space-y-1.5 border-t pt-3">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Crescimento Patrimonial Líquido</h4>
+                        <div id="historicoPatrimonioLinhas" class="space-y-1.5 text-xs font-bold"></div>
+                    </div>
                 </div>
 
                 <div class="text-left space-y-3">
@@ -263,7 +270,7 @@
                 </button>
             </div>
 
-            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="nav_pagDashboard" class="flex flex-col items-center justify-center w-14 text-gray-400 transition active:scale-95">
+            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="nav_pagDashboard" class="flex flex-col items-center justify-center w-14 text-purple-700 transition active:scale-95">
                 <span class="material-icons text-2xl">auto_awesome</span>
                 <span class="text-[10px] font-bold mt-1">Insights</span>
             </button>
@@ -293,9 +300,12 @@
         let orcamentos = JSON.parse(localStorage.getItem('orc_ianne_v2')) || {};
         let receitasMensaisMestres = JSON.parse(localStorage.getItem('rec_mensais_ianne')) || {};
         let historicoTaxasLocal = JSON.parse(localStorage.getItem('hist_taxas_ianne')) || {};
+        
+        // Memória local para a evolução do patrimônio líquido acumulado
+        let historicoPatrimonioLocal = JSON.parse(localStorage.getItem('hist_patrimonio_ianne')) || {};
+        
         let fluxoAtual = 'Despesa'; let isParcelado = false; let isRecorrente = false;
 
-        // Mapeamento corrigido incluindo NICO&NINA e NICO&NICO em Custo de Vida
         const MAPA_BLOCOS_VIDA = {
             'ALIMENTAÇÃO': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'EDUCAÇÃO': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
@@ -546,6 +556,16 @@
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             if (document.getElementById('saldoGeralTotal')) document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if (document.getElementById('widgetSaldoTotal')) document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
+            
+            // 🔥 NOVO: Intercepta o saldo geral consolidado e salva cumulativamente com base no mês do dashboard ativo
+            const mesAtualChave = document.getElementById('dashMes').textContent;
+            if(mesAtualChave && mesAtualChave !== "Sincronizando..." && totalConsolidado > 0) {
+                // Atualiza apenas se o valor guardado for diferente ou inexistente
+                if(!historicoPatrimonioLocal[mesAtualChave] || historicoPatrimonioLocal[mesAtualChave] !== totalConsolidado) {
+                    historicoPatrimonioLocal[mesAtualChave] = totalConsolidado;
+                    localStorage.setItem('hist_patrimonio_ianne', JSON.stringify(historicoPatrimonioLocal));
+                }
+            }
         }
 
         function selecionarMenu(id, titulo) {
@@ -589,24 +609,55 @@
                 document.getElementById('dashReceita').textContent = "R$ " + d.receita.toLocaleString('pt-BR', {minimumFractionDigits: 2});
                 document.getElementById('dashGastos').textContent = "R$ " + d.gastos.toLocaleString('pt-BR', {minimumFractionDigits: 2});
                 const pctInv = d.taxaInv * 100; document.getElementById('dashTaxa').textContent = pctInv.toFixed(1) + "%";
-                historicoTaxasLocal[d.mes] = pctInv; localStorage.setItem('hist_taxas_ianne', JSON.stringify(historicoTaxasLocal));
+                
+                historicoTaxasLocal[d.mes] = pctInv; 
+                localStorage.setItem('hist_taxas_ianne', JSON.stringify(historicoTaxasLocal));
+                
+                // Força recálculo de saldos de contas para capturar o patrimônio líquido atual com a chave de mês já estabelecida
+                if(bancoContas.length > 0) renderTelaSaldos();
+                
                 renderSparklinesTaxas();
+                renderSparklinesPatrimonio();
+                
                 const container = document.getElementById('containerInsights'); container.innerHTML = '';
                 if(pctInv >= 20) criarCaixaInsight(container, `Sua taxa de investimento está excelente (${pctInv.toFixed(0)}%). Seu orçamento de lazer está saudável e você conseguiu manter a qualidade de vida!`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
                 else if (pctInv > 0) criarCaixaInsight(container, "Seu aporte caiu este mês. Que tal monitorar as saídas em jantares ou semanas com mais eventos sociais?", "border-amber-500", "bg-amber-50", "text-amber-800");
                 else criarCaixaInsight(container, "Aviso crítico: Seus custos superaram as entradas. Revise as transações recentes.", "border-red-500", "bg-red-50", "text-red-800");
-            } else { renderSparklinesTaxas(); }
+            } else { 
+                renderSparklinesTaxas(); 
+                renderSparklinesPatrimonio();
+            }
         }
 
         function renderSparklinesTaxas() {
             const container = document.getElementById('historicoTaxasLinhas'); if(!container) return; container.innerHTML = '';
             const chaves = Object.keys(historicoTaxasLocal).sort().slice(-4);
-            if(chaves.length === 0) { container.innerHTML = '<p class="text-gray-400 italic font-medium text-[11px]">Sem histórico ainda.</p>'; return; }
+            if(chaves.length === 0) { container.innerHTML = '<p class="text-gray-400 italic font-medium text-[11px]">Sem histórico de taxas ainda.</p>'; return; }
             chaves.forEach(mes => {
                 const taxa = historicoTaxasLocal[mes] || 0; const pctLimitada = Math.max(0, Math.min(100, taxa));
                 let colBarra = taxa >= 20 ? "bg-emerald-500" : (taxa <= 0 ? "bg-red-500" : "bg-purple-600");
                 const div = document.createElement('div'); div.className = "flex items-center space-x-2";
                 div.innerHTML = `<span class="w-16 text-gray-500 text-[10px] truncate">${mes.split(' / ')[0]}</span><div class="flex-1 bg-gray-100 rounded-full h-2 relative"><div class="h-2 rounded-full ${colBarra}" style="width: ${pctLimitada}%"></div></div><span class="w-10 text-right text-[10px] text-gray-700">${taxa.toFixed(0)}%</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        // 🔥 NOVO: Renderiza as barras horizontais proporcionais do patrimônio líquido acumulado
+        function renderSparklinesPatrimonio() {
+            const container = document.getElementById('historicoPatrimonioLinhas'); if(!container) return; container.innerHTML = '';
+            const chaves = Object.keys(historicoPatrimonioLocal).sort().slice(-4);
+            if(chaves.length === 0) { container.innerHTML = '<p class="text-gray-400 italic font-medium text-[11px]">Sincronizando histórico patrimonial...</p>'; return; }
+            
+            // Encontra o maior valor histórico do patrimônio para servir de escala 100% gráfica
+            let valMaximo = 0;
+            chaves.forEach(mes => { if(historicoPatrimonioLocal[mes] > valMaximo) valMaximo = historicoPatrimonioLocal[mes]; });
+            if(valMaximo <= 0) valMaximo = 1;
+
+            chaves.forEach(mes => {
+                const totalS = historicoPatrimonioLocal[mes] || 0;
+                const pctVisual = (totalS / valMaximo) * 100;
+                const div = document.createElement('div'); div.className = "flex items-center space-x-2";
+                div.innerHTML = `<span class="w-16 text-gray-500 text-[10px] truncate">${mes.split(' / ')[0]}</span><div class="flex-1 bg-gray-100 rounded-full h-2 relative"><div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style="width: ${pctVisual}%"></div></div><span class="w-20 text-right text-[10px] text-gray-700 font-mono">R$ ${totalS.toLocaleString('pt-BR', {maximumFractionDigits: 0})}</span>`;
                 container.appendChild(div);
             });
         }
@@ -752,13 +803,13 @@
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
             const mes = selectMes.value;
             if(!orcamentos[mes]) orcamentos[mes] = { ...orcamentosBase };
-            const receitaDoMes = receitasMensaisMestres[mes] || 0;
-            document.getElementById('inputReceitaManual').value = receitaDoMes > 0 ? receitaDoMes : '';
+            const receiverDoMes = receitasMensaisMestres[mes] || 0;
+            document.getElementById('inputReceitaManual').value = receiverDoMes > 0 ? receiverDoMes : '';
 
             let somaTotalPlanejado = 0;
             Object.keys(orcamentosBase).forEach(m => { const v = orcamentos[mes][m]; if(v !== undefined) somaTotalPlanejado += v; });
             document.getElementById('txtTotalPlanejado').textContent = "R$ " + somaTotalPlanejado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-            const saldoLivreOBZ = receitaDoMes - somaTotalPlanejado;
+            const saldoLivreOBZ = receiverDoMes - somaTotalPlanejado;
             document.getElementById('txtSaldoLivreOBZ').textContent = "R$ " + saldoLivreOBZ.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             document.getElementById('txtSaldoLivreOBZ').className = "font-black text-sm mt-0.5 " + (saldoLivreOBZ > 0 ? "text-emerald-300" : (saldoLivreOBZ < 0 ? "text-red-400 animate-pulse" : "text-white"));
 
@@ -774,13 +825,13 @@
 
                 bInfo.itens.forEach(m => {
                     const vPlan = orcamentos[mes][m] || 0; const vReal = gastosAgrupadosMesMacro[mes] && gastosAgrupadosMesMacro[mes][m] ? gastosAgrupadosMesMacro[mes][m] : 0;
-                    const vRest = vPlan - vReal; const pctT = receitaDoMes > 0 ? (vPlan / receitaDoMes) * 100 : 0;
+                    const vRest = vPlan - vReal; const pctT = receiverDoMes > 0 ? (vPlan / receiverDoMes) * 100 : 0;
                     let pctG = vPlan > 0 ? (vReal / vPlan) * 100 : 0;
-                    let corB = pctG >= 100 ? "animate-pulse-red bg-red-600" : (pctG >= 70 ? "bg-amber-500" : "bg-purple-600");
+                    let colBarra = pctG >= 100 ? "animate-pulse-red bg-red-600" : (pctG >= 70 ? "bg-amber-500" : "bg-purple-600");
                     let corT = pctG >= 100 ? "text-red-600 font-black animate-pulse" : (pctG >= 70 ? "text-amber-600 font-bold" : "text-emerald-600");
 
                     const card = document.createElement('div'); card.className = "bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3";
-                    card.innerHTML = `<div class="grid grid-cols-3 items-center text-xs font-bold"><div class="flex flex-col truncate"><span class="truncate text-gray-800 tracking-wide">${m}</span>${receitaDoMes > 0 ? `<span class="text-[9px] font-mono font-medium text-gray-400">(${pctT.toFixed(0)}%)</span>`:''}</div><div class="text-center"><input type="text" inputmode="numeric" pattern="[0-9]*" value="${vPlan || ''}" placeholder="0" class="w-20 p-1 border rounded text-center bg-gray-50 text-purple-900 font-bold focus:ring-1 focus:ring-purple-400 outline-none" onchange="atualizarMetaEEnviarSheets('${m}', this.value)"></div><span class="text-right ${corT}">${vRest >= 0 ? 'R$ ' + vRest.toFixed(2) : 'Estourou R$ ' + Math.abs(vRest).toFixed(2)}</span></div><div class="space-y-1"><div class="w-full bg-gray-100 rounded-full h-2 relative overflow-hidden"><div class="h-full rounded-full ${corB} transition-all duration-500" style="width: ${Math.min(100, pctG)}%"></div></div><div class="flex justify-between text-[9px] text-gray-400 font-medium px-0.5"><span>Gasto: R$ ${vReal.toFixed(2)}</span><span>${pctG.toFixed(0)}%</span></div></div>`;
+                    card.innerHTML = `<div class="grid grid-cols-3 items-center text-xs font-bold"><div class="flex flex-col truncate"><span class="truncate text-gray-800 tracking-wide">${m}</span>${receiverDoMes > 0 ? `<span class="text-[9px] font-mono font-medium text-gray-400">(${pctT.toFixed(0)}%)</span>`:''}</div><div class="text-center"><input type="text" inputmode="numeric" pattern="[0-9]*" value="${vPlan || ''}" placeholder="0" class="w-20 p-1 border rounded text-center bg-gray-50 text-purple-900 font-bold focus:ring-1 focus:ring-purple-400 outline-none" onchange="atualizarMetaEEnviarSheets('${m}', this.value)"></div><span class="text-right ${corT}">${vRest >= 0 ? 'R$ ' + vRest.toFixed(2) : 'Estourou R$ ' + Math.abs(vRest).toFixed(2)}</span></div><div class="space-y-1"><div class="w-full bg-gray-100 rounded-full h-2 relative overflow-hidden"><div class="h-full rounded-full ${colBarra} transition-all duration-500" style="width: ${Math.min(100, pctG)}%"></div></div><div class="flex justify-between text-[9px] text-gray-400 font-medium px-0.5"><span>Gasto: R$ ${vReal.toFixed(2)}</span><span>${pctG.toFixed(0)}%</span></div></div>`;
                     subC.appendChild(card);
                 });
             });
