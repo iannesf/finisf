@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v6.6.2</title>
+    <title>Finanças Ianne v6.7.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -12,6 +12,11 @@
         body { padding-bottom: 110px; } /* Evita que o conteúdo fique escondido atrás da barra fixa inferior robusta */
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulse-red {
+            0%, 100% { background-color: #ef4444; opacity: 1; }
+            50% { background-color: #b91c1c; opacity: 0.8; }
+        }
+        .animate-pulse-red { animation: pulse-red 2s infinite; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen overflow-x-hidden">
@@ -218,7 +223,7 @@
                     <span class="text-center">Planejado (R$)</span>
                     <span class="text-right">Restante</span>
                 </div>
-                <div id="editorOrcamentos" class="space-y-3"></div>
+                <div id="editorOrcamentos" class="space-y-5"></div>
             </div>
         </section>
 
@@ -449,7 +454,6 @@
                     });
                 }
 
-                // === CORREÇÃO: Altera para ON somente se não houver mais requisições pendentes ===
                 const status = document.getElementById('statusApp');
                 if (status && navigator.onLine) {
                     status.textContent = "ON";
@@ -605,14 +609,13 @@
         }
 
         function lidarAutocomplete(txt) {
-            const box = document.getElementById('boxSuggestions'); // boxSugestoes no HTML
-            const boxReal = document.getElementById('boxSugestoes') || box;
-            if(!boxReal) return;
-            boxReal.innerHTML = '';
-            if(fluxoAtual === 'Transferência' || !txt || txt.length < 2) { boxReal.classList.add('hidden'); return; }
+            const box = document.getElementById('boxSugestoes');
+            if(!box) return;
+            box.innerHTML = '';
+            if(fluxoAtual === 'Transferência' || !txt || txt.length < 2) { box.classList.add('hidden'); return; }
             const matches = memoria.filter(m => m.desc.toLowerCase().includes(txt.toLowerCase())).slice(0, 3);
-            if(matches.length === 0) { boxReal.classList.add('hidden'); return; }
-            boxReal.classList.remove('hidden');
+            if(matches.length === 0) { box.classList.add('hidden'); return; }
+            box.classList.remove('hidden');
             matches.forEach(m => {
                 const div = document.createElement('div'); div.className = "p-3 text-xs font-bold text-gray-600 hover:bg-purple-50 cursor-pointer flex justify-between";
                 div.innerHTML = `<span>${m.desc}</span><span class="text-[9px] opacity-50">${m.macro}</span>`;
@@ -623,10 +626,10 @@
                     alwaysUpdateMicros();
                     document.getElementById('microCat').value = m.micro;
                     document.getElementById('contaOrigem').value = m.conta;
-                    boxReal.classList.add('hidden');
+                    box.classList.add('hidden');
                     checarAlertaOrcamento();
                 };
-                boxReal.appendChild(div);
+                box.appendChild(div);
             });
         }
 
@@ -644,7 +647,6 @@
             if (btn) { btn.disabled = false; btn.textContent = "ATUALIZAR DADOS DO SHEETS"; }
             
             if(r.result === "success") {
-                // === CORREÇÃO DEFINITIVA DO SYNC: Força o status a virar ON quando os dados chegam ===
                 const status = document.getElementById('statusApp');
                 if (status) {
                     status.textContent = "ON";
@@ -729,7 +731,6 @@
                 listaExtratoGlobal = r.dados;
                 localStorage.setItem('cache_extrato', JSON.stringify(r.dados));
                 
-                gastasAgrupadosMesMacro = {};
                 const localGastos = {};
                 r.dados.forEach(item => {
                     if(item.tipo !== 'Receita' && item.macro !== 'TRANSFERÊNCIA') {
@@ -1026,6 +1027,9 @@
             }
         }
 
+        // ==========================================
+        // 🛠️ NOVO MOTOR VISUAL DA ABA METAS (OPÇÃO A)
+        // ==========================================
         function renderTelaOrcamentos() {
             const container = document.getElementById('editorOrcamentos'); if(!container) return; container.innerHTML = '';
             const selectMes = document.getElementById('filtroMesOrcamento'); if(!selectMes || !selectMes.value) return;
@@ -1038,21 +1042,46 @@
                 const vRealizado = gastosAgrupadosMesMacro[mes] && gastosAgrupadosMesMacro[mes][m] ? gastosAgrupadosMesMacro[mes][m] : 0;
                 const vRestante = vPlanejado - vRealizado;
 
-                let colRestante = "text-emerald-600";
-                if(vRestante < 0) colRestante = "text-red-600 font-extrabold animate-pulse";
+                // Cálculo da percentagem gasta
+                let pctGasta = vPlanejado > 0 ? (vRealizado / vPlanejado) * 100 : 0;
+                let pctBarra = Math.min(100, pctGasta); // Limita o preenchimento visual em 100%
 
-                const div = document.createElement('div');
-                div.className = "bg-gray-50 p-3 rounded-xl border grid grid-cols-3 items-center text-xs font-bold shadow-sm";
-                div.innerHTML = `
-                    <span class="truncate text-gray-700">${m}</span>
-                    <div class="text-center">
-                        <input type="number" value="${vPlanejado}" class="w-20 p-1 border rounded text-center bg-white text-purple-900 focus:ring-1 focus:ring-purple-400 outline-none" onchange="orcamentos['${mes}']['${m}']=parseFloat(this.value)||0; localStorage.setItem('orc_ianne_v2', JSON.stringify(orcamentos)); renderTelaOrcamentos();">
+                // Definição dinâmica de cores e animações do termómetro
+                let corBarra = "bg-purple-600"; 
+                let corTextoRestante = "text-emerald-600";
+                
+                if (pctGasta >= 100) {
+                    corBarra = "animate-pulse-red bg-red-600";
+                    corTextoRestante = "text-red-600 font-black animate-pulse";
+                } else if (pctGasta >= 70) {
+                    corBarra = "bg-amber-500";
+                    corTextoRestante = "text-amber-600 font-extrabold";
+                }
+
+                const cardMeta = document.createElement('div');
+                cardMeta.className = "bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3";
+                cardMeta.innerHTML = `
+                    <div class="grid grid-cols-3 items-center text-xs font-bold">
+                        <span class="truncate text-gray-800 tracking-wide">${m}</span>
+                        <div class="text-center">
+                            <input type="number" value="${vPlanejado}" class="w-20 p-1 border rounded text-center bg-gray-50 text-purple-900 font-bold focus:ring-1 focus:ring-purple-400 outline-none" onchange="orcamentos['${mes}']['${m}']=parseFloat(this.value)||0; localStorage.setItem('orc_ianne_v2', JSON.stringify(orcamentos)); renderTelaOrcamentos();">
+                        </div>
+                        <span class="text-right ${corTextoRestante}">
+                            ${vRestante >= 0 ? 'R$ ' + vRestante.toFixed(2) : 'Estourou R$ ' + Math.abs(vRestante).toFixed(2)}
+                        </span>
                     </div>
-                    <span class="text-right ${colRestante}">
-                        ${vRestante >= 0 ? 'R$ ' + vRestante.toFixed(2) : 'Estourou R$ ' + Math.abs(vRestante).toFixed(2)}
-                    </span>
+                    
+                    <div class="space-y-1">
+                        <div class="w-full bg-gray-100 rounded-full h-2 relative overflow-hidden">
+                            <div class="h-full rounded-full ${corBarra} transition-all duration-500" style="width: ${pctBarra}%"></div>
+                        </div>
+                        <div class="flex justify-between text-[9px] text-gray-400 font-medium px-0.5">
+                            <span>Gasto: R$ ${vRealizado.toFixed(2)}</span>
+                            <span>${pctGasta.toFixed(0)}%</span>
+                        </div>
+                    </div>
                 `;
-                container.appendChild(div);
+                container.appendChild(cardMeta);
             });
         }
 
@@ -1061,17 +1090,15 @@
         initMonths();
         sincronizarConfiguracoesPlanilha();
         
-        // === CORREÇÃO DE CONCORRÊNCIA NA INICIALIZAÇÃO ===
+        // CORREÇÃO DE CONCORRÊNCIA NA INICIALIZAÇÃO
         setTimeout(() => { 
             let filaInicial = obterFila();
             salvarFila(filaInicial);
             
-            // Ativa o menu visualmente sem forçar uma segunda chamada JSONP atropelada
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             document.getElementById('pagDashboard').classList.remove('hidden');
             document.getElementById('tituloPagina').textContent = 'Fechamento & Insights';
             
-            // Aguarda um pequeno respiro de 800ms para disparar os dados do Dashboard com segurança
             setTimeout(() => { puxarDashboardReal(); }, 800);
         }, 300);
         
