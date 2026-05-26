@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v6.6.1</title>
+    <title>Finanças Ianne v6.6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -280,7 +280,7 @@
         let saldosVivosContas = {};
         let listaExtratoGlobal = []; 
         let ultimoFiltroFluxo = 'TODOS';
-        let gastos AgrupadosMesMacro = {}; 
+        let gastosAgrupadosMesMacro = {}; 
         let limiteLinhasExibidas = 20;
 
         let memoria = JSON.parse(localStorage.getItem('mem_ianne')) || [];
@@ -329,13 +329,11 @@
             processandoFilaAtiva = true;
             const item = fila[0];
             
-            // Forçamos a ação correta e injetamos as credenciais necessárias
             item.acao = "salvar";
             item.pin = meuPin;
             
             const p = new URLSearchParams(item);
             
-            // Usando injeção dinâmica de Script (JSONP) para limpar a fila mantendo a consistência cruzada
             const script = document.createElement('script');
             script.src = WEB_APP_URL + "?" + p.toString() + "&callback=window.posProcessarFilaElemento&t=" + Date.now();
             document.body.appendChild(script);
@@ -345,10 +343,9 @@
             processandoFilaAtiva = false;
             if(r && r.result === "success") {
                 let fila = obterFila();
-                fila.shift(); // Remove o primeiro elemento enviado com sucesso
+                fila.shift(); 
                 salvarFila(fila);
                 
-                // Dispara o próximo da fila ou atualiza as configurações caso tenha esvaziado
                 if (fila.length > 0) {
                     setTimeout(processarFilaOffline, 300);
                 } else {
@@ -571,7 +568,8 @@
                 }
             });
             
-            const saldoFormatado = "R$ " + totalConsolidated.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            // --- 🛠️ LINHA CORRIGIDA DEFINITIVAMENTE AQUI ---
+            const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             const sGeralEl = document.getElementById('saldoGeralTotal');
             if (sGeralEl) sGeralEl.textContent = saldoFormatado;
             
@@ -786,7 +784,6 @@
                 const div = document.createElement('div'); div.className = "py-3 flex justify-between items-center";
                 let cor = i.tipo === 'Receita' ? 'text-emerald-600' : 'text-red-600';
                 
-                // Injeta marcador visual discreto caso o item esteja aguardando upload na fila offline
                 let tagAguardando = i.offline ? ` <span class="text-[9px] bg-amber-500 text-white font-black px-1 rounded uppercase tracking-wide">Fila</span>` : '';
 
                 div.innerHTML = `
@@ -921,9 +918,6 @@
             } else { s.disabled = true; s.className = "p-3 border rounded-xl text-xs bg-gray-50"; }
         }
 
-        // ==========================================
-        // 🔄 ENVIO INTELIGENTE COM BALANCEAMENTO DE REDE
-        // ==========================================
         document.getElementById('financeForm').onsubmit = function(e) {
             e.preventDefault();
             const btn = document.getElementById('btnSalvar');
@@ -944,13 +938,11 @@
                 recorrente: isRecorrente ? "true" : "false"
             };
 
-            // SE ESTIVER OFFLINE: Retemos localmente, atualizamos o caixa fantasma na hora e limpamos a tela
             if (!navigator.onLine) {
                 let fila = obterFila();
                 fila.push(paramsObjeto);
                 salvarFila(fila);
                 
-                // MUTAÇÃO FANTASMA DO CAIXA LOCAL (Reflete no saldo e extrato instantaneamente)
                 let valNumerico = parseFloat(paramsObjeto.valor) || 0;
                 if(saldosVivosContas[paramsObjeto.conta] !== undefined) {
                     if(paramsObjeto.tipo === 'Receita') saldosVivosContas[paramsObjeto.conta] += valNumerico;
@@ -958,7 +950,6 @@
                     localStorage.setItem('cache_saldos', JSON.stringify(saldosVivosContas));
                 }
                 
-                // Formata a data americana do HTML para o padrão brasileiro do Extrato
                 let ptData = paramsObjeto.dataGasto.split('-').reverse().join('/');
                 listaExtratoGlobal.unshift({
                     id: Date.now(),
@@ -968,14 +959,13 @@
                     valor: paramsObjeto.valor,
                     macro: paramsObjeto.macro,
                     conta: paramsObjeto.conta,
-                    offline: true // Ativa o badge "Fila"
+                    offline: true 
                 });
                 localStorage.setItem('cache_extrato', JSON.stringify(listaExtratoGlobal));
 
                 comitarMemoriaLocal(paramsObjeto.descricao);
-                alert("Modo Sem Sinal: Lançamento guardado na fila do celular e computado nos seus saldos locais. Sincronização automática em background ativa!");
+                alert("Modo Sem Sinal: Lançamento guardado na fila do celular e computado nos seus saldos locais. Sincronização automática ativa!");
                 
-                // Reseta os inputs limpando a tela sem forçar reload de página e quebrar o estado off
                 document.getElementById('financeForm').reset();
                 document.getElementById('valorFalsoInput').value = '';
                 document.getElementById('valorInput').value = '';
@@ -984,7 +974,6 @@
                 return;
             }
 
-            // SE ESTIVER ONLINE: Envio padrão imediato
             const p = new URLSearchParams({ callback: 'posSalvar', pin: meuPin, ...paramsObjeto });
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?" + p.toString();
             document.body.appendChild(script);
@@ -1034,8 +1023,8 @@
                 const vRealizado = gastosAgrupadosMesMacro[mes] && gastosAgrupadosMesMacro[mes][m] ? gastosAgrupadosMesMacro[mes][m] : 0;
                 const vRestante = vPlanejado - vRealizado;
 
-                let corRestante = "text-emerald-600";
-                if(vRestante < 0) corRestante = "text-red-600 font-extrabold animate-pulse";
+                let colRestante = "text-emerald-600";
+                if(vRestante < 0) colRestante = "text-red-600 font-extrabold animate-pulse";
 
                 const div = document.createElement('div');
                 div.className = "bg-gray-50 p-3 rounded-xl border grid grid-cols-3 items-center text-xs font-bold shadow-sm";
@@ -1044,7 +1033,7 @@
                     <div class="text-center">
                         <input type="number" value="${vPlanejado}" class="w-20 p-1 border rounded text-center bg-white text-purple-900 focus:ring-1 focus:ring-purple-400 outline-none" onchange="orcamentos['${mes}']['${m}']=parseFloat(this.value)||0; localStorage.setItem('orc_ianne_v2', JSON.stringify(orcamentos)); renderTelaOrcamentos();">
                     </div>
-                    <span class="text-right ${corRestante}">
+                    <span class="text-right ${colRestante}">
                         ${vRestante >= 0 ? 'R$ ' + vRestante.toFixed(2) : 'Estourou R$ ' + Math.abs(vRestante).toFixed(2)}
                     </span>
                 `;
@@ -1058,7 +1047,6 @@
         sincronizarConfiguracoesPlanilha();
         
         setTimeout(() => { 
-            // Atualiza o contador de pendências logo no arranque do app
             let filaInicial = obterFila();
             salvarFila(filaInicial);
             selecionarMenu('pagDashboard', 'Fechamento & Insights'); 
