@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v7.0.1</title>
+    <title>Finanças Ianne v7.0.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -263,7 +263,7 @@
                 </button>
             </div>
 
-            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="nav_pagDashboard" class="flex flex-col items-center justify-center w-14 text-purple-700 pl-3 transition active:scale-95">
+            <button onclick="selecionarMenu('pagDashboard', 'Fechamento & Insights')" id="nav_pagDashboard" class="flex flex-col items-center justify-center w-14 text-gray-400 transition active:scale-95">
                 <span class="material-icons text-2xl">auto_awesome</span>
                 <span class="text-[10px] font-bold mt-1">Insights</span>
             </button>
@@ -295,11 +295,14 @@
         let historicoTaxasLocal = JSON.parse(localStorage.getItem('hist_taxas_ianne')) || {};
         let fluxoAtual = 'Despesa'; let isParcelado = false; let isRecorrente = false;
 
+        // Mapeamento corrigido incluindo NICO&NINA e NICO&NICO em Custo de Vida
         const MAPA_BLOCOS_VIDA = {
             'ALIMENTAÇÃO': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'EDUCAÇÃO': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'MORADIA': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'NICO&NICA': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
+            'NICO&NICO': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
+            'NICO&NINA': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'SAÚDE': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'TRANSPORTE': { bloco: 'Custo de Vida', cor: 'text-blue-600', bg: 'bg-blue-50' },
             'BEM ESTAR': { bloco: 'Bem-Estar', cor: 'text-pink-600', bg: 'bg-pink-50' },
