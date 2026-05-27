@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,7 +55,7 @@
 
             <div class="bg-white p-6 rounded-2xl shadow-sm text-center space-y-6">
                 <div>
-                    <p id="dashMes" class="text-xs font-bold text-gray-400 uppercase tracking-widest">Sincronizando...</p>
+                    <p id="dashMes" class="text-xs font-bold text-gray-400 uppercase tracking-widest">A Sincronizar...</p>
                     <h2 class="text-3xl font-black text-gray-800">Fechamento</h2>
                 </div>
                 
@@ -98,7 +98,7 @@
                         <span class="material-icons text-purple-600 text-lg">psychology</span><span>Motor de Insights</span>
                     </h3>
                     <div id="containerInsights" class="space-y-2">
-                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar los dados vivos.</p>
+                        <p class="text-xs text-gray-400 italic">Clique abaixo para processar os dados vivos.</p>
                     </div>
                 </div>
                 
@@ -127,7 +127,7 @@
 
                     <div class="relative">
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-1">O quê? (Descrição)</label>
-                        <input type="text" id="descricaoInput" autocomplete="off" required placeholder="Ex: Mercado" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" oninput="lidarAutocomplete(this.value)">
+                        <input type="text" id="descricaoInput" autocomplete="off" required placeholder="Ex: Supermercado" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" oninput="lidarAutocomplete(this.value)">
                         <div id="boxSugestoes" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border shadow-2xl rounded-xl z-50 overflow-hidden"></div>
                     </div>
 
@@ -164,7 +164,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Status da Transação</label>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Estado da Transação</label>
                         <select id="statusInput" class="w-full p-3 border rounded-xl text-xs bg-white font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 outline-none">
                             <option value="Efetivado">✅ Efetivado / Pago</option>
                             <option value="Pendente">⏳ Pendente / Futuro</option>
@@ -177,8 +177,8 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-2">
-                        <button type="button" id="btnSalvarExtrato" onclick="submeterFinanceForm('extrato')" class="bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-xs text-center">Salvar</button>
-                        <button type="button" id="btnSalvarOutro" onclick="submeterFinanceForm('outro')" class="bg-gray-200 text-purple-900 font-bold py-4 rounded-xl shadow-md active:scale-95 transition tracking-wide uppercase text-xs text-center border border-purple-200">Salvar e Outro</button>
+                        <button type="button" id="btnSalvarExtrato" onclick="submeterFinanceForm('extrato')" class="bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-xs text-center">Guardar</button>
+                        <button type="button" id="btnSalvarOutro" onclick="submeterFinanceForm('outro')" class="bg-gray-200 text-purple-900 font-bold py-4 rounded-xl shadow-md active:scale-95 transition tracking-wide uppercase text-xs text-center border border-purple-200">Guardar + Novo</button>
                     </div>
                 </form>
             </div>
@@ -197,14 +197,14 @@
                     <button onclick="sincronizarConfiguracoesPlanilha()" class="material-icons text-purple-800 text-lg">refresh</button>
                 </div>
                 <div id="listaSaldosContasEfetivas" class="space-y-2 divide-y divide-gray-100">
-                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando contas...</p>
+                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">A calcular contas...</p>
                 </div>
                 
                 <div class="flex justify-between items-center border-b pb-2 pt-4">
                     <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">credit_card</span><span>Cartões de Crédito (Faturas)</span></h3>
                 </div>
                 <div id="listaSaldosCartoes" class="space-y-2 divide-y divide-gray-100">
-                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">Calculando cartões...</p>
+                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">A calcular cartões...</p>
                 </div>
             </div>
         </section>
@@ -218,7 +218,7 @@
 
                 <div class="relative flex items-center">
                     <span class="material-icons absolute left-3 text-gray-400 text-lg">search</span>
-                    <input type="text" id="buscaExtratoTexto" oninput="resgatarLimiteEDecorar(); filtrarExtrato(ultimoFiltroFluxo);" placeholder="Buscar por descrição (ex: Mercado)..." class="w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-medium focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50">
+                    <input type="text" id="buscaExtratoTexto" oninput="resgatarLimiteEDecorar(); filtrarExtrato(ultimoFiltroFluxo);" placeholder="Pesquisar por descrição..." class="w-full pl-9 pr-4 py-2.5 border rounded-xl text-xs font-medium focus:ring-2 focus:ring-purple-500 outline-none bg-gray-50">
                 </div>
 
                 <div class="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px] font-bold">
@@ -261,7 +261,7 @@
                         </div>
                     </div>
                     <div class="bg-purple-950/40 p-2 rounded-xl border border-purple-700/30 flex flex-col justify-center">
-                        <p class="text-[9px] font-bold tracking-wider opacity-60 uppercase">Planejado</p>
+                        <p class="text-[9px] font-bold tracking-wider opacity-60 uppercase">Planeado</p>
                         <p id="txtTotalPlanejado" class="font-black text-sm text-purple-200 mt-0.5">R$ 0,00</p>
                     </div>
                     <div class="bg-purple-950/40 p-2 rounded-xl border border-purple-700/30 flex flex-col justify-center">
@@ -292,7 +292,7 @@
 
         let meuPin = localStorage.getItem('finisf_pin');
         if (!meuPin) {
-            meuPin = prompt("Insira seu PIN de 4 dígitos:");
+            meuPin = prompt("Insira o seu PIN de 4 dígitos:");
             if (meuPin) localStorage.setItem('finisf_pin', meuPin);
             else { alert("Bloqueado."); window.stop(); }
         }
@@ -358,7 +358,7 @@
         window.addEventListener('online', () => { processarFilaOffline(); });
 
         function sincronizarConfiguracoesPlanilha() {
-            if(!navigator.onLine) { window.processarConfiguracoes({ result: "success", contas: [], categories: [], saldos: {} }); return; }
+            if(!navigator.onLine) { window.processarConfiguracoes({ result: "success", contas: [], categorias: [], saldos: {} }); return; }
             const script = document.createElement('script');
             script.src = WEB_APP_URL + "?callback=processarConfiguracoes&acao=puxarConfiguracoes&pin=" + meuPin + "&t=" + Date.now();
             document.body.appendChild(script);
@@ -484,10 +484,10 @@
             alerta.classList.remove('hidden');
             if(valor > restante) {
                 alerta.className = "text-[10px] p-2 rounded-lg font-bold bg-red-100 text-red-800 border border-red-200 animate-bounce";
-                alerta.textContent = `Aviso: Lançamento estoura a meta de ${macro}! (Restante: R$ ${restante.toFixed(2)})`;
+                alerta.textContent = `Aviso: Lançamento ultrapassa a meta de ${macro}! (Restante: R$ ${restante.toFixed(2)})`;
             } else {
                 alerta.className = "text-[10px] p-2 rounded-lg font-bold bg-purple-50 text-purple-800 border border-purple-100";
-                alerta.textContent = `Meta sob controle. Ficará R$ ${(restante - valor).toFixed(2)} disponível em ${macro}.`;
+                alerta.textContent = `Meta sob controlo. Ficará R$ ${(restante - valor).toFixed(2)} disponível em ${macro}.`;
             }
         }
 
@@ -536,15 +536,15 @@
                 }
             });
 
-            if(containerContas.children.length === 0) containerContas.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhuma conta cadastrada.</p>`;
-            if(containerCartoes.children.length === 0) containerCartoes.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhum cartão cadastrado.</p>`;
+            if(containerContas.children.length === 0) containerContas.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhuma conta registada.</p>`;
+            if(containerCartoes.children.length === 0) containerCartoes.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhum cartão registado.</p>`;
 
-            const saldoFormatado = "R$ " + totalConsolidated = totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             if (document.getElementById('saldoGeralTotal')) document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if (document.getElementById('widgetSaldoTotal')) document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
             
             const mesLetrasChave = document.getElementById('dashMes').textContent.replace(/\s+/g, '').toLowerCase();
-            if(mesLetrasChave && mesLetrasChave !== "sincronizando..." && totalConsolidado > 0 && navigator.onLine) {
+            if(mesLetrasChave && mesLetrasChave !== "a sincronizar..." && totalConsolidado > 0 && navigator.onLine) {
                 if(!historicoPatrimonioNuvem[mesLetrasChave] || historicoPatrimonioNuvem[mesLetrasChave] !== totalConsolidado) {
                     historicoPatrimonioNuvem[mesLetrasChave] = totalConsolidado;
                     scriptRequest({ acao: "registrarPatrimonio", mes: document.getElementById('dashMes').textContent, valor: totalConsolidado });
@@ -602,8 +602,8 @@
                 sincronizarConfiguracoesPlanilha(); renderSparklinesTaxas(); renderSparklinesPatrimonio();
                 
                 const container = document.getElementById('containerInsights'); container.innerHTML = '';
-                if(d.comprometidoAinda > 0) criarCaixaInsight(container, `Atenção: Tens R$ ${d.comprometidoAinda.toFixed(2)} já comprometidos com as metas e contas fixas planejadas para este mês. Monitora o teu saldo líquido!`, "border-amber-500", "bg-amber-50", "text-amber-800");
-                else criarCaixaInsight(container, `Todas as tuas metas planejadas para o mês já foram pagas ou cobertas! O saldo restante está 100% livre.`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
+                if(d.comprometidoAinda > 0) criarCaixaInsight(container, `Atenção: Tens R$ ${d.comprometidoAinda.toFixed(2)} já comprometidos com as metas e contas fixas planeadas para este mês. Monitoriza o teu saldo líquido!`, "border-amber-500", "bg-amber-50", "text-amber-800");
+                else criarCaixaInsight(container, `Todas as tuas metas planeadas para o mês já foram pagas ou cobertas! O saldo restante está 100% livre.`, "border-emerald-500", "bg-emerald-50", "text-emerald-800");
             }
         }
 
@@ -777,8 +777,8 @@
 
             const btnExtrato = document.getElementById('btnSalvarExtrato');
             const btnOutro = document.getElementById('btnSalvarOutro');
-            if(btnExtrato) { btnExtrato.disabled = true; btnExtrato.textContent = "GRAVANDO..."; }
-            if(btnOutro) { btnOutro.disabled = true; btnOutro.textContent = "GRAVANDO..."; }
+            if(btnExtrato) { btnExtrato.disabled = true; btnExtrato.textContent = "A GUARDAR..."; }
+            if(btnOutro) { btnOutro.disabled = true; btnOutro.textContent = "A GUARDAR..."; }
             
             let tipoEnvio = fluxoAtual;
             let valorEnvio = document.getElementById('valorInput').value;
@@ -823,8 +823,8 @@
 
                 const btnExtrato = document.getElementById('btnSalvarExtrato');
                 const btnOutro = document.getElementById('btnSalvarOutro');
-                if(btnExtrato) { btnExtrato.disabled = false; btnExtrato.textContent = "Salvar"; }
-                if(btnOutro) { btnOutro.disabled = false; btnOutro.textContent = "Salvar e Outro"; }
+                if(btnExtrato) { btnExtrato.disabled = false; btnExtrato.textContent = "Guardar"; }
+                if(btnOutro) { btnOutro.disabled = false; btnOutro.textContent = "Guardar + Novo"; }
 
                 if (destinoPosSalvar === 'extrato') {
                     selecionarMenu('pagExtrato', 'Histórico Recente');
@@ -834,11 +834,11 @@
                 }
                 sincronizarConfiguracoesPlanilha();
             } else {
-                alert("Erro ao salvar: " + r.message);
+                alert("Erro ao guardar: " + r.message);
                 const btnExtrato = document.getElementById('btnSalvarExtrato');
                 const btnOutro = document.getElementById('btnSalvarOutro');
-                if(btnExtrato) { btnExtrato.disabled = false; btnExtrato.textContent = "Salvar"; }
-                if(btnOutro) { btnOutro.disabled = false; btnOutro.textContent = "Salvar e Outro"; }
+                if(btnExtrato) { btnExtrato.disabled = false; btnExtrato.textContent = "Guardar"; }
+                if(btnOutro) { btnOutro.disabled = false; btnOutro.textContent = "Guardar + Novo"; }
             }
         };
 
