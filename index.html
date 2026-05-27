@@ -163,12 +163,23 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Status da Transação</label>
+                        <select id="statusInput" class="w-full p-3 border rounded-xl text-xs bg-white font-bold text-gray-700 focus:ring-2 focus:ring-purple-500 outline-none">
+                            <option value="Efetivado">✅ Efetivado / Pago</option>
+                            <option value="Pendente">⏳ Pendente / Futuro</option>
+                        </select>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-2">
                         <input type="date" id="dataGasto" class="p-3 border rounded-xl text-xs" onchange="autoAjustarVencimento(); checarAlertaOrcamento();">
                         <input type="date" id="dataFatura" class="p-3 border rounded-xl text-xs">
                     </div>
 
-                    <button type="submit" id="btnSalvar" class="w-full bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-sm">Salvar Registro</button>
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button type="button" id="btnSalvarExtrato" onclick="submeterFinanceForm('extrato')" class="bg-purple-800 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide uppercase text-xs text-center">Salvar</button>
+                        <button type="button" id="btnSalvarOutro" onclick="submeterFinanceForm('outro')" class="bg-gray-200 text-purple-900 font-bold py-4 rounded-xl shadow-md active:scale-95 transition tracking-wide uppercase text-xs text-center border border-purple-200">Salvar e Outro</button>
+                    </div>
                 </form>
             </div>
         </section>
@@ -296,6 +307,7 @@
         let historicoPatrimonioNuvem = {}; 
         
         let fluxoAtual = 'Despesa'; let isParcelado = false; let isRecorrente = false;
+        let destinoPosSalvar = 'extrato';
 
         const MAPA_BLOCOS_VIDA = {
             'ALIMENTAÇÃO': { bloco: 'Custo de Vida' }, 'EDUCAÇÃO': { bloco: 'Custo de Vida' }, 'MORADIA': { bloco: 'Custo de Vida' },
@@ -346,7 +358,7 @@
         window.addEventListener('online', () => { processarFilaOffline(); });
 
         function sincronizarConfiguracoesPlanilha() {
-            if(!navigator.onLine) { window.processarConfiguracoes({ result: "success", contas: [], categorias: [], saldos: {} }); return; }
+            if(!navigator.onLine) { window.processarConfiguracoes({ result: "success", contas: [], categories: [], saldos: {} }); return; }
             const script = document.createElement('script');
             script.src = WEB_APP_URL + "?callback=processarConfiguracoes&acao=puxarConfiguracoes&pin=" + meuPin + "&t=" + Date.now();
             document.body.appendChild(script);
@@ -436,7 +448,7 @@
             const valNum = parseFloat(valorStr) || 0;
             const chaveComposta = `${selectMes.value}-${catOuMestre}`; 
 
-            if(catOuMestre === 'RECEITA_MESTRE') receitasMensaisMestres[mesStr] = valNum;
+            if(catOuMestre === 'RECEITA_MESTRE') { receitasMensaisMestres[mesStr] = valNum; }
             else { if(!orcamentos[mesStr]) orcamentos[mesStr] = { ...orcamentosBase }; orcamentos[mesStr][catOuMestre] = valNum; }
             renderTelaOrcamentos(); 
 
@@ -527,7 +539,7 @@
             if(containerContas.children.length === 0) containerContas.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhuma conta cadastrada.</p>`;
             if(containerCartoes.children.length === 0) containerCartoes.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhum cartão cadastrado.</p>`;
 
-            const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const saldoFormatado = "R$ " + totalConsolidated = totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             if (document.getElementById('saldoGeralTotal')) document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if (document.getElementById('widgetSaldoTotal')) document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
             
@@ -637,7 +649,7 @@
                 listaExtratoGlobal = r.dados; localStorage.setItem('cache_extrato', JSON.stringify(r.dados));
                 const localGastos = {};
                 r.dados.forEach(item => {
-                    if(item.tipo !== 'Receita' && !item.tipo.startsWith('Ajuste') && item.macro !== 'TRANSFERÊNCIA') {
+                    if(item.tipo !== 'Receita' && !item.tipo.startsWith('Ajuste') && item.macro !== 'TRANSFERÊNCIA' && item.status !== 'Pendente') {
                         const partes = item.dataGasto.split('/');
                         if(partes.length === 3) {
                             const names = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
@@ -665,7 +677,15 @@
             });
             filtrados.slice(0, limiteLinhasExibidas).forEach(i => {
                 let sCor = i.tipo==='Receita' || i.tipo==='Ajuste +'?'text-emerald-600':'text-red-600';
-                container.innerHTML += `<div class="py-3 flex justify-between items-center"><div><p class="text-xs font-bold text-gray-800">${i.descricao}</p><p class="text-[9px] text-gray-400">${i.dataGasto} · <span class="bg-purple-50 px-1 rounded font-bold text-purple-800">${i.conta}</span> · <span class="text-gray-500 italic">${i.macro}</span></p></div><div class="flex items-center space-x-3"><p class="text-xs font-bold ${sCor}">R$ ${parseFloat(i.valor).toFixed(2)}</p><button type="button" onclick="excluirLinha(${i.id})" class="material-icons text-gray-300 text-lg">delete</button></div></div>`;
+                let badgeStatus = '';
+                let botaoEfetivar = '';
+                
+                if (i.status === 'Pendente') {
+                    badgeStatus = ` · <span class="bg-amber-100 px-1 rounded font-bold text-amber-800 text-[9px]">⏳ PENDENTE</span>`;
+                    botaoEfetivar = `<button type="button" onclick="efetivarLinha('${i.id}')" title="Efetivar Lançamento" class="material-icons text-amber-500 text-lg hover:text-amber-700 transition">check_circle</button>`;
+                }
+
+                container.innerHTML += `<div class="py-3 flex justify-between items-center"><div><p class="text-xs font-bold text-gray-800">${i.descricao}</p><p class="text-[9px] text-gray-400">${i.dataGasto} · <span class="bg-purple-50 px-1 rounded font-bold text-purple-800">${i.conta}</span> · <span class="text-gray-500 italic">${i.macro}</span>${badgeStatus}</p></div><div class="flex items-center space-x-3"><p class="text-xs font-bold ${sCor}">R$ ${parseFloat(i.valor).toFixed(2)}</p>${botaoEfetivar}<button type="button" onclick="excluirLinha('${i.id}')" class="material-icons text-gray-300 text-lg hover:text-red-500 transition">delete</button></div></div>`;
             });
             if(document.getElementById('btnCarregarMaisExtrato')) document.getElementById('btnCarregarMaisExtrato').classList.toggle('hidden', filtrados.length <= limiteLinhasExibidas);
         }
@@ -676,6 +696,21 @@
             document.body.appendChild(script);
         }
         window.posExcluir = function(r) { if(r.result === "success") location.reload(); }
+
+        function efetivarLinha(id) {
+            if(!confirm("Deseja efetivar este lançamento para consolidar o saldo?") || !navigator.onLine) return;
+            const script = document.createElement('script'); script.src = WEB_APP_URL + "?callback=posEfetivar&acao=efetivar&pin=" + meuPin + "&idLinha=" + id;
+            document.body.appendChild(script);
+        }
+        window.posEfetivar = function(r) { 
+            if(r.result === "success") {
+                alert("Lançamento efetivado com sucesso!");
+                puxarExtratoReal();
+                sincronizarConfiguracoesPlanilha();
+            } else {
+                alert("Erro ao efetivar: " + r.message);
+            }
+        }
 
         function setFluxo(t) {
             fluxoAtual = t; isParcelado = false; isRecorrente = false;
@@ -735,8 +770,15 @@
             else { s.disabled = true; s.className = "p-3 border rounded-xl text-xs bg-gray-50"; }
         }
 
-        document.getElementById('financeForm').onsubmit = function(e) {
-            e.preventDefault(); const btn = document.getElementById('btnSalvar'); btn.disabled = true; btn.textContent = "GRAVANDO...";
+        function submeterFinanceForm(destino) {
+            destinoPosSalvar = destino;
+            const form = document.getElementById('financeForm');
+            if (!form.reportValidity()) return;
+
+            const btnExtrato = document.getElementById('btnSalvarExtrato');
+            const btnOutro = document.getElementById('btnSalvarOutro');
+            if(btnExtrato) { btnExtrato.disabled = true; btnExtrato.textContent = "GRAVANDO..."; }
+            if(btnOutro) { btnOutro.disabled = true; btnOutro.textContent = "GRAVANDO..."; }
             
             let tipoEnvio = fluxoAtual;
             let valorEnvio = document.getElementById('valorInput').value;
@@ -761,14 +803,44 @@
                 tipo: tipoEnvio, valor: valorEnvio, descricao: document.getElementById('descricaoInput').value,
                 macro: macroEnvio, micro: microEnvio, conta: contaAlvo, contaDestino: document.getElementById('contaDestino').value,
                 dataGasto: document.getElementById('dataGasto').value, dataFatura: document.getElementById('dataFatura').value,
-                parcelado: isParcelado?"true":"false", numParcelas: isParcelado?document.getElementById('numParcelas').value:1, recorrente: isRecorrente?"true":"false"
+                parcelado: isParcelado?"true":"false", numParcelas: isParcelado?document.getElementById('numParcelas').value:1, recorrente: isRecorrente?"true":"false",
+                status: document.getElementById('statusInput').value
             };
 
             const script = document.createElement('script'); script.src = WEB_APP_URL + "?" + new URLSearchParams({ callback: 'posSalvar', pin: meuPin, ...pObj }).toString();
             document.body.appendChild(script);
-        };
+        }
 
-        window.posSalvar = function(r) { if(r.result === "success") { alert("Concluído!"); location.reload(); } };
+        window.posSalvar = function(r) { 
+            if(r.result === "success") { 
+                alert("Concluído!"); 
+                
+                document.getElementById('financeForm').reset();
+                document.getElementById('valorInput').value = '';
+                document.getElementById('valorFalsoInput').value = '';
+                document.getElementById('dataGasto').value = new Date().toISOString().split('T')[0];
+                document.getElementById('statusInput').value = 'Efetivado';
+
+                const btnExtrato = document.getElementById('btnSalvarExtrato');
+                const btnOutro = document.getElementById('btnSalvarOutro');
+                if(btnExtrato) { btnExtrato.disabled = false; btnExtrato.textContent = "Salvar"; }
+                if(btnOutro) { btnOutro.disabled = false; btnOutro.textContent = "Salvar e Outro"; }
+
+                if (destinoPosSalvar === 'extrato') {
+                    selecionarMenu('pagExtrato', 'Histórico Recente');
+                } else {
+                    setFluxo(fluxoAtual);
+                    autoAjustarVencimento();
+                }
+                sincronizarConfiguracoesPlanilha();
+            } else {
+                alert("Erro ao salvar: " + r.message);
+                const btnExtrato = document.getElementById('btnSalvarExtrato');
+                const btnOutro = document.getElementById('btnSalvarOutro');
+                if(btnExtrato) { btnExtrato.disabled = false; btnExtrato.textContent = "Salvar"; }
+                if(btnOutro) { btnOutro.disabled = false; btnOutro.textContent = "Salvar e Outro"; }
+            }
+        };
 
         function initMonths() {
             const f = document.getElementById('filtroMesOrcamento'); f.innerHTML = '';
