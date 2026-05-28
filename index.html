@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanças Ianne v8.2.0</title>
+    <title>Finanças Ianne v8.3.0</title>
     
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -185,28 +185,55 @@
         </section>
 
         <section id="pagContas" class="hidden space-y-4">
-            <div class="bg-purple-900 text-white p-5 rounded-2xl shadow-md text-center">
-                <p class="text-xs font-bold uppercase opacity-70 tracking-wider">Saldo Geral Consolidado</p>
-                <h2 id="saldoGeralTotal" class="text-3xl font-black mt-1">R$ 0,00</h2>
-                <p class="text-[9px] opacity-50 mt-1">*Não inclui faturas de cartões pendentes</p>
-            </div>
             
-            <div class="bg-white p-5 rounded-2xl shadow-sm space-y-4">
-                <div class="flex justify-between items-center border-b pb-2">
-                    <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">account_balance</span><span>Contas & Carteiras</span></h3>
-                    <button onclick="sincronizarConfiguracoesPlanilha()" class="material-icons text-purple-800 text-lg">refresh</button>
-                </div>
-                <div id="listaSaldosContasEfetivas" class="space-y-2 divide-y divide-gray-100">
-                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">A calcular contas...</p>
+            <div class="flex bg-gray-200 p-1 rounded-xl shadow-inner">
+                <button id="btnTabReais" onclick="alternarAbaContas('reais')" class="flex-1 py-2.5 text-xs font-bold rounded-lg bg-white shadow text-purple-900 transition">Saldos Reais</button>
+                <button id="btnTabProj" onclick="alternarAbaContas('projecao')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-500 transition">Projeções & Faturas</button>
+            </div>
+
+            <div id="blocoReais" class="space-y-4">
+                <div class="bg-purple-900 text-white p-5 rounded-2xl shadow-md text-center">
+                    <p class="text-xs font-bold uppercase opacity-70 tracking-wider">Saldo Geral Consolidado</p>
+                    <h2 id="saldoGeralTotal" class="text-3xl font-black mt-1">R$ 0,00</h2>
+                    <p class="text-[9px] opacity-50 mt-1">*Não inclui faturas ou pendentes futuros</p>
                 </div>
                 
-                <div class="flex justify-between items-center border-b pb-2 pt-4">
-                    <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">credit_card</span><span>Cartões de Crédito (Faturas)</span></h3>
-                </div>
-                <div id="listaSaldosCartoes" class="space-y-2 divide-y divide-gray-100">
-                    <p class="text-center text-xs p-4 text-gray-400 animate-pulse">A calcular cartões...</p>
+                <div class="bg-white p-5 rounded-2xl shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">account_balance</span><span>Contas & Carteiras</span></h3>
+                        <button onclick="sincronizarConfiguracoesPlanilha()" class="material-icons text-purple-800 text-lg">refresh</button>
+                    </div>
+                    <div id="listaSaldosContasEfetivas" class="space-y-2 divide-y divide-gray-100">
+                        <p class="text-center text-xs p-4 text-gray-400 animate-pulse">A calcular contas...</p>
+                    </div>
+                    
+                    <div class="flex justify-between items-center border-b pb-2 pt-4">
+                        <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1"><span class="material-icons text-sm">credit_card</span><span>Cartões de Crédito (Faturas)</span></h3>
+                    </div>
+                    <div id="listaSaldosCartoes" class="space-y-2 divide-y divide-gray-100">
+                        <p class="text-center text-xs p-4 text-gray-400 animate-pulse">A calcular cartões...</p>
+                    </div>
                 </div>
             </div>
+
+            <div id="blocoProjecao" class="hidden space-y-4">
+                <div class="bg-gradient-to-br from-indigo-800 to-purple-900 text-white p-5 rounded-2xl shadow-md text-center relative">
+                    <p class="text-xs font-bold uppercase opacity-70 tracking-wider">Saldo Projetado</p>
+                    <h2 id="saldoProjetadoTotal" class="text-3xl font-black mt-1">R$ 0,00</h2>
+                    <div class="mt-3 inline-block bg-purple-950/50 p-1.5 rounded-lg border border-purple-700/50">
+                        <select id="mesProjecao" onchange="renderTelaProjecao()" class="bg-transparent text-white text-xs font-bold outline-none cursor-pointer">
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm space-y-3">
+                    <h3 class="font-black text-gray-800 text-xs uppercase tracking-widest text-purple-900 flex items-center space-x-1 border-b pb-2"><span class="material-icons text-sm">event_upcoming</span><span>Faturas & Pendentes do Mês</span></h3>
+                    <div id="listaPendentesMes" class="space-y-2 divide-y divide-gray-100">
+                        <p class="text-center text-xs p-4 text-gray-400">Nenhum lançamento futuro...</p>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <section id="pagExtrato" class="hidden space-y-4">
@@ -305,9 +332,11 @@
         let receitasMensaisMestres = JSON.parse(localStorage.getItem('rec_mensais_ianne')) || {};
         let historicoTaxasLocal = JSON.parse(localStorage.getItem('hist_taxas_ianne')) || {};
         let historicoPatrimonioNuvem = {}; 
+        let pendentesGlobais = JSON.parse(localStorage.getItem('cache_pendentes')) || [];
         
         let fluxoAtual = 'Despesa'; let isParcelado = false; let isRecorrente = false;
         let destinoPosSalvar = 'extrato';
+        let saldoRealConsolidadoGlobal = 0;
 
         const MAPA_BLOCOS_VIDA = {
             'ALIMENTAÇÃO': { bloco: 'Custo de Vida' }, 'EDUCAÇÃO': { bloco: 'Custo de Vida' }, 'MORADIA': { bloco: 'Custo de Vida' },
@@ -315,6 +344,13 @@
             'SAÚDE': { bloco: 'Custo de Vida' }, 'TRANSPORTE': { bloco: 'Custo de Vida' }, 'BEM ESTAR': { bloco: 'Bem-Estar' },
             'CUIDADOS PESSOAIS': { bloco: 'Bem-Estar' }, 'LAZER': { bloco: 'Bem-Estar' }, 'RESERVA': { bloco: 'Reserva' }
         };
+
+        function parseDataBr(dataStr) {
+            if(!dataStr || typeof dataStr !== 'string') return null;
+            let p = dataStr.split('/');
+            if(p.length !== 3) return null;
+            return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+        }
 
         function mascaraMoeda(input) {
             let valor = input.value.replace(/\D/g, ""); valor = (valor / 100).toFixed(2) + "";
@@ -381,6 +417,10 @@
                 }
                 
                 if(r.historicoPatrimonial) historicoPatrimonioNuvem = r.historicoPatrimonial;
+                if(r.pendentesFuturos) {
+                    pendentesGlobais = r.pendentesFuturos;
+                    localStorage.setItem('cache_pendentes', JSON.stringify(pendentesGlobais));
+                }
 
                 if(r.metasSheets) {
                     let novoOrcamentos = {};
@@ -438,7 +478,7 @@
                     Object.keys(dadosCategorias).forEach(m => { sFiltroMacroExt.innerHTML += `<option value="${m}">${m}</option>`; });
                 }
 
-                renderTelaSaldos(); setFluxo(fluxoAtual); renderTelaOrcamentos();
+                renderTelaSaldos(); setFluxo(fluxoAtual); renderTelaOrcamentos(); renderTelaProjecao();
             }
         }
 
@@ -496,11 +536,6 @@
             const p = dataStr.split('-'); return `${names[parseInt(p[1]) - 1]}/${p[0]}`.replace(/\s+/g, '').toLowerCase();
         }
 
-        function getMesAnoString(dataStr) {
-            const names = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-            const p = dataStr.split('-'); return `${names[parseInt(p[1]) - 1]}/${p[0]}`;
-        }
-
         function renderTelaSaldos() {
             const containerContas = document.getElementById('listaSaldosContasEfetivas');
             const containerCartoes = document.getElementById('listaSaldosCartoes');
@@ -539,6 +574,7 @@
             if(containerContas.children.length === 0) containerContas.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhuma conta registada.</p>`;
             if(containerCartoes.children.length === 0) containerCartoes.innerHTML = `<p class="text-center text-xs p-2 text-gray-400 italic">Nenhum cartão registado.</p>`;
 
+            saldoRealConsolidadoGlobal = totalConsolidado;
             const saldoFormatado = "R$ " + totalConsolidado.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             if (document.getElementById('saldoGeralTotal')) document.getElementById('saldoGeralTotal').textContent = saldoFormatado;
             if (document.getElementById('widgetSaldoTotal')) document.getElementById('widgetSaldoTotal').textContent = saldoFormatado;
@@ -551,6 +587,92 @@
                 }
             }
         }
+
+        // ==========================================
+        // NOVA LÓGICA DE ABAS E PROJEÇÕES
+        // ==========================================
+        function alternarAbaContas(aba) {
+            if(aba === 'reais') {
+                document.getElementById('blocoReais').classList.remove('hidden');
+                document.getElementById('blocoProjecao').classList.add('hidden');
+                document.getElementById('btnTabReais').className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-white shadow text-purple-900 transition";
+                document.getElementById('btnTabProj').className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-500 transition";
+            } else {
+                document.getElementById('blocoReais').classList.add('hidden');
+                document.getElementById('blocoProjecao').classList.remove('hidden');
+                document.getElementById('btnTabProj').className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-white shadow text-purple-900 transition";
+                document.getElementById('btnTabReais').className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-gray-500 transition";
+                renderTelaProjecao();
+            }
+        }
+
+        function initMesesProjecao() {
+            const select = document.getElementById('mesProjecao');
+            if(!select) return;
+            select.innerHTML = '';
+            const names = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+            let hoje = new Date();
+            for(let i = 0; i < 12; i++) {
+                let d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+                let val = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+                let txt = `Final de ${names[d.getMonth()]} / ${d.getFullYear()}`;
+                select.innerHTML += `<option value="${val}">${txt}</option>`;
+            }
+        }
+
+        function renderTelaProjecao() {
+            let saldoProj = saldoRealConsolidadoGlobal;
+            let valSel = document.getElementById('mesProjecao').value;
+            if(!valSel) return;
+            let partes = valSel.split('-');
+            let anoSel = parseInt(partes[0]);
+            let mesSel = parseInt(partes[1]);
+            let limiteData = new Date(anoSel, mesSel, 0, 23, 59, 59); // último dia do mês selecionado
+
+            let htmlLista = "";
+            let temItem = false;
+
+            let pendentesOrdenados = [...pendentesGlobais].sort((a,b) => {
+                let da = parseDataBr(a.tipo === 'Cartão' && a.dataFatura ? a.dataFatura : a.dataGasto);
+                let db = parseDataBr(b.tipo === 'Cartão' && b.dataFatura ? b.dataFatura : b.dataGasto);
+                return (da || new Date(0)) - (db || new Date(0));
+            });
+
+            pendentesOrdenados.forEach(p => {
+                let dataUsar = (p.tipo === 'Cartão' && p.dataFatura) ? p.dataFatura : p.dataGasto;
+                let d = parseDataBr(dataUsar);
+                if (!d) return;
+
+                if (d <= limiteData) {
+                    let v = parseFloat(p.valor) || 0;
+                    if(p.tipo === 'Receita' || p.tipo === 'Ajuste +') saldoProj += v;
+                    else if(p.tipo === 'Despesa' || p.tipo === 'Cartão' || p.tipo === 'Ajuste -') saldoProj -= v;
+                }
+
+                if (d.getFullYear() === anoSel && (d.getMonth() + 1) === mesSel) {
+                    temItem = true;
+                    let sCor = (p.tipo === 'Receita' || p.tipo === 'Ajuste +') ? 'text-emerald-600' : 'text-red-600';
+                    let iconeFatura = p.tipo === 'Cartão' ? '<span class="material-icons text-[10px] text-purple-500 mr-0.5">credit_card</span>' : '';
+                    htmlLista += `<div class="py-2.5 flex justify-between items-center first:pt-1">
+                        <div>
+                            <p class="text-xs font-bold text-gray-800">${p.descricao}</p>
+                            <p class="text-[9px] text-gray-400 flex items-center mt-0.5">${iconeFatura}${dataUsar} · <span class="bg-purple-50 px-1 rounded font-bold text-purple-800 ml-1 mr-1">${p.conta}</span></p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <p class="text-xs font-bold ${sCor}">R$ ${parseFloat(p.valor).toFixed(2)}</p>
+                            <button type="button" onclick="efetivarLinha('${p.id}')" title="Efetivar Lançamento" class="material-icons text-amber-500 text-lg hover:text-amber-600 transition active:scale-90">check_circle</button>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            document.getElementById('saldoProjetadoTotal').textContent = "R$ " + saldoProj.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            
+            const cont = document.getElementById('listaPendentesMes');
+            if(temItem) cont.innerHTML = htmlLista;
+            else cont.innerHTML = `<p class="text-center text-xs p-4 text-gray-400 italic">Sem transações futuras registadas neste mês.</p>`;
+        }
+
 
         function selecionarMenu(id, titulo) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
@@ -676,13 +798,13 @@
                 return (tipoFluxo === 'TODOS' || i.tipo === tipoFluxo) && (contaSel === 'TODAS' || i.conta === contaSel) && (macroSel === 'TODAS' || i.macro === macroSel) && (!termo || i.descricao.toLowerCase().includes(termo));
             });
             filtrados.slice(0, limiteLinhasExibidas).forEach(i => {
-                let sCor = i.tipo==='Receita' || i.tipo==='Ajuste +'?'text-emerald-600':'text-red-600';
+                let sCor = (i.tipo==='Receita' || i.tipo==='Ajuste +')?'text-emerald-600':'text-red-600';
                 let badgeStatus = '';
                 let botaoEfetivar = '';
                 
                 if (i.status === 'Pendente') {
                     badgeStatus = ` · <span class="bg-amber-100 px-1 rounded font-bold text-amber-800 text-[9px]">⏳ PENDENTE</span>`;
-                    botaoEfetivar = `<button type="button" onclick="efetivarLinha('${i.id}')" title="Efetivar Lançamento" class="material-icons text-amber-500 text-lg hover:text-amber-700 transition">check_circle</button>`;
+                    botaoEfetivar = `<button type="button" onclick="efetivarLinha('${i.id}')" title="Efetivar Lançamento" class="material-icons text-amber-500 text-lg hover:text-amber-700 transition active:scale-90">check_circle</button>`;
                 }
 
                 container.innerHTML += `<div class="py-3 flex justify-between items-center"><div><p class="text-xs font-bold text-gray-800">${i.descricao}</p><p class="text-[9px] text-gray-400">${i.dataGasto} · <span class="bg-purple-50 px-1 rounded font-bold text-purple-800">${i.conta}</span> · <span class="text-gray-500 italic">${i.macro}</span>${badgeStatus}</p></div><div class="flex items-center space-x-3"><p class="text-xs font-bold ${sCor}">R$ ${parseFloat(i.valor).toFixed(2)}</p>${botaoEfetivar}<button type="button" onclick="excluirLinha('${i.id}')" class="material-icons text-gray-300 text-lg hover:text-red-500 transition">delete</button></div></div>`;
@@ -706,7 +828,7 @@
             if(r.result === "success") {
                 alert("Lançamento efetivado com sucesso!");
                 puxarExtratoReal();
-                sincronizarConfiguracoesPlanilha();
+                sincronizarConfiguracoesPlanilha(); // Atualiza aba de projeções
             } else {
                 alert("Erro ao efetivar: " + r.message);
             }
@@ -888,7 +1010,10 @@
         }
 
         document.getElementById('dataGasto').value = new Date().toISOString().split('T')[0];
-        initMonths(); sincronizarConfiguracoesPlanilha();
+        initMonths(); 
+        initMesesProjecao(); // Inicia a lista de meses para projeção
+        sincronizarConfiguracoesPlanilha();
+
         setTimeout(() => { document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden')); document.getElementById('pagDashboard').classList.remove('hidden'); setTimeout(() => { puxarDashboardReal(); }, 800); }, 300);
     </script>
 </body>
